@@ -3,7 +3,6 @@ export default class User {
     static lastId = 0;
     locationIds: string[] = [];
     id: number = User.lastId++;
-    token: string = null;
 
     constructor(
         public name: string,
@@ -13,9 +12,9 @@ export default class User {
 
     }
 
-    hasAccessTo(LocationId: string) {
-        return !(this.locationIds.every((locationId: string) => {
-            return locationId !== locationId;
+    hasAccessTo(locationId: string) {
+        return !(this.locationIds.every((checkedLocationId: string) => {
+            return checkedLocationId !== locationId;
         }));
     }
 
