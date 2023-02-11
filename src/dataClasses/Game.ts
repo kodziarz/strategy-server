@@ -1,12 +1,19 @@
+import Building from "./gameManager/Building";
+import Map from "./gameManager/Map";
 import Player from "./Player";
 import User from "./User";
 
-export default class GameManager {
+/**Stores data about specific game. */
+export default class Game {
 
+    private map: Map;
     private currentPlayers: Player[] = [];
+    private buildings: Building[] = [];
     private _isWaiting = true;
 
-    constructor() { }
+    constructor() {
+        this.map = new Map(20, 20);
+    }
 
     /**
      * Determines whether user pariticipates in the game.
@@ -21,7 +28,7 @@ export default class GameManager {
         return false;
     };
 
-    /**Adds {@link User} to current game ({@link GameManager}) */
+    /**Adds {@link User} to current game ({@link Game}) */
     addPlayer = (user: User) => {
         this.currentPlayers.push(new Player(user));
     };

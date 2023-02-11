@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import GameManager from 'src/dataClasses/GamesManager';
+import Game from 'src/dataClasses/Game';
 import User from 'src/dataClasses/User';
 
 @Injectable()
 export class GameService {
 
     /**Contains game managers of all current played games. */
-    private gameManagers: GameManager[] = [];
+    private gameManagers: Game[] = [];
 
-    /**Maps {@link GameManager | GameManagers} to {@link User | User's} ids. */
-    private gameManagersOfPlayers: Map<number, GameManager>;
+    /**Maps {@link Game | GameManagers} to {@link User | User's} ids. */
+    private gameManagersOfPlayers: Map<number, Game>;
 
     constructor() {
         this.gameManagersOfPlayers = new Map();
