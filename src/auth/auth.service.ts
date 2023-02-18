@@ -23,9 +23,24 @@ export class AuthService {
             access_token: this.jwtService.sign({
                 sub: user.id,
             } as JwtPayload)
+        };
+    }
+
+    verifyToken(token: string): JwtPayload {
+        try {
+            let payload = this.jwtService.verify(token);
+            return payload;
+        } catch (err) {
+            throw new InvalidTokenException();
         }
     }
 
+}
+
+export class InvalidTokenException extends Error {
+    constructor() {
+        super("Invalid token");
+    }
 }
 
 

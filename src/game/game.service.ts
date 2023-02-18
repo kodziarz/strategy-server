@@ -28,7 +28,7 @@ export class GameService {
         });
     };
 
-    getGameManagerOfUser = ({ userId }: { userId: number; }) => {
+    getGameOfUser = ({ userId }: { userId: number; }) => {
         return this.gameManagersOfPlayers.get(userId);
     };
 }

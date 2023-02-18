@@ -13,7 +13,7 @@ export class UsersService {
     /**
      * Determines whether the user'a credentials match.
      * @param username Login of checked user.
-     * @param passwrod Password of checked user.
+     * @param password Password of checked user.
      * @returns {@link User} who matches credentials (undefined if none matches)
      * with updated JWT token.
      */

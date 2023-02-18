@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from 'src/users/users.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { WsGuard } from './guards/ws-auth.guard';
 
 
 
@@ -17,7 +18,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
             secret: process.env.APP_SECRET,
             signOptions: { expiresIn: process.env.JWT_EXPIRES }
         })],
-    providers: [AuthService, LocalStrategy, JwtStrategy],
+    providers: [AuthService, LocalStrategy, JwtStrategy, WsGuard],
     controllers: [],
     exports: [AuthService]
 })
