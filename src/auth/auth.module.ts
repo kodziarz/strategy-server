@@ -7,12 +7,14 @@ import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from 'src/users/users.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { WsGuard } from './guards/ws-auth.guard';
+import { GameModule } from 'src/game/game.module';
 
 
 
 @Module({
     imports: [
         UsersModule,
+        GameModule,
         ConfigModule.forRoot(),
         JwtModule.register({
             secret: process.env.APP_SECRET,

@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, Inject, Injectable, Logger } from "@nestjs/common";
 import { Socket } from "socket.io";
 import JwtPayload from "src/dataClasses/JwtPayload";
+import { GameService } from "src/game/game.service";
 import { UsersService } from "src/users/users.service";
 import { AuthService } from "../auth.service";
 
@@ -28,7 +29,8 @@ export class WsGuard implements CanActivate {
 
     constructor(
         @Inject(UsersService) private readonly usersService: UsersService,
-        @Inject(AuthService) private readonly authService: AuthService
+        @Inject(AuthService) private readonly authService: AuthService,
+        @Inject(GameService) private readonly gameService: GameService
     ) { }
 
     canActivate(
@@ -42,8 +44,17 @@ export class WsGuard implements CanActivate {
                 const decoded = this.authService.verifyToken(bearerToken) as JwtPayload;
 
                 let user = await this.usersService.getUserById(decoded.sub);
-                Object.assign(client, { user: user });
+                Object.assign(client, { user });
 
+                if (user != undefined) {
+                    let game = this.gameService.getGameOfUser(user.id);
+                    Object.assign(client, { game });
+
+                    if (game != undefined) {
+                        let player = game.getPlayerByUserId(user.id);
+                        Object.assign(client, { player });
+                    }
+                }
 
 
                 if (user)

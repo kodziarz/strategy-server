@@ -1,5 +1,7 @@
-import Building from "./gameManager/Building";
-import Map from "./gameManager/Map";
+import { Logger } from "@nestjs/common";
+import Building from "./game/Building";
+import MainBuilding from "./game/buildings/MainBuilding";
+import Map from "./game/Map";
 import Player from "./Player";
 import User from "./User";
 
@@ -30,7 +32,29 @@ export default class Game {
 
     /**Adds {@link User} to current game ({@link Game}) */
     addPlayer = (user: User) => {
-        this.currentPlayers.push(new Player(user));
+        let player = new Player(user);
+        this.currentPlayers.push(player);
+
+        let mainBuildingField = this.map.getStartMapField();
+        let mainBuilding = new MainBuilding(
+            mainBuildingField.x,
+            mainBuildingField.y
+        );
+        player.buildings.push(mainBuilding);
+
+        //DEV dodawanie obserwowanych pól do listy
+        player.observedMapFields.push(
+            ...this.map.getObservableMapFieldsFromPosition(
+                mainBuildingField.x,
+                mainBuildingField.y
+            ));
+    };
+
+    getPlayerByUserId = (userId: number) => {
+        for (const player of this.currentPlayers) {
+            if (player.userId == userId) return player;
+        }
+        return null;
     };
 
 

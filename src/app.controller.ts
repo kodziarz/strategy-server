@@ -32,10 +32,10 @@ export class AppController {
 
   @UseGuards(JwtAuthGuard)
   @Get("joinGame")
-  async joinGame(@Request() req): Promise<string> {
+  joinGame(@Request() req) {
+    Logger.debug("zapytanie na joinGame");
     this.gameService.addUserToGame(req.user);
-    let game = this.gameService.getGameOfUser(req.user);
-
-    return "xd"; //TODO
+    Logger.debug("dodano gracza do gry.");
+    return "xd";
   }
 }

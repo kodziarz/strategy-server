@@ -15,20 +15,26 @@ export class GameService {
         this.gameManagersOfPlayers = new Map();
     }
 
-    // createNewGame = () => {
-    //     this.gameManagers.push(new GameManager());
-    // };
-
-    addUserToGame = (user: User) => {
-        this.gameManagers.every((gameManager) => {
-            if (gameManager.isWaiting) {
-                gameManager.addPlayer(user);
-                this.gameManagersOfPlayers.set(user.id, gameManager);
-            }
-        });
+    createNewGame = (): Game => {
+        let game = new Game();
+        this.gameManagers.push(game);
+        return game;
     };
 
-    getGameOfUser = ({ userId }: { userId: number; }) => {
+    addUserToGame = (user: User) => {
+        for (const game of this.gameManagers) {
+            if (game.isWaiting) {
+                game.addPlayer(user);
+                this.gameManagersOfPlayers.set(user.id, game);
+            }
+            return;
+        }
+        let game = this.createNewGame();
+        game.addPlayer(user);
+        this.gameManagersOfPlayers.set(user.id, game);
+    };
+
+    getGameOfUser = (userId: number) => {
         return this.gameManagersOfPlayers.get(userId);
     };
 }
