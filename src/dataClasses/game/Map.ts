@@ -1,5 +1,5 @@
 import { Logger } from "@nestjs/common";
-import { SETTINGS } from "../SETTINGS";
+import SETTINGS from "../SETTINGS";
 import MapField from "./MapField";
 import Grassland from "./mapFields/Grassland";
 

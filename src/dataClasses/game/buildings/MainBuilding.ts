@@ -1,4 +1,4 @@
-import { SETTINGS } from "src/dataClasses/SETTINGS";
+import SETTINGS from "src/dataClasses/SETTINGS";
 import Building from "../Building";
 import BuildingsTypes from "./BuildingsTypes";
 

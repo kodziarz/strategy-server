@@ -57,6 +57,14 @@ export default class Game {
         return null;
     };
 
+    getRows = () => {
+        return this.map.rows;
+    };
+
+    getColumns = () => {
+        return this.map.columns;
+    };
+
 
     public get isWaiting() {
         return this._isWaiting;

@@ -1,4 +1,4 @@
-import { SETTINGS } from "../SETTINGS";
+import SETTINGS from "../SETTINGS";
 import FieldsTypes from "./mapFields/FieldsTypes";
 
 /**Class to extend to create MapFields containing something etc. */

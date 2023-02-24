@@ -56,13 +56,16 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   map(client: any) {
     Logger.debug("Odebrano wydarzenie map.");
     const player: Player = client.player;
+    const game: Game = client.game;
     if (player != undefined)
       return {
         event: "map",
         data: {
           buildings: player.buildings,
           observedMapFields: player.observedMapFields,
-          visitedMapFields: player.visitedMapFields
+          visitedMapFields: player.visitedMapFields,
+          rows: game.getRows(),
+          columns: game.getColumns()
         }
       };
     else throw new WsException("User has not joined any game");
