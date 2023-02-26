@@ -44,8 +44,8 @@ export default class Map {
         const minY = field.row - 5 >= 0 ? field.row - 5 : 0;
         const maxY = field.row + 5 < this.rows ? field.row + 5 : this.rows;
 
-        for (let x = minX; x < maxX; x++) {
-            for (let y = minY; y < maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+            for (let y = minY; y <= maxY; y++) {
                 result.push(this.mapFields[x][y]);
             }
         }
