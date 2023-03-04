@@ -40,9 +40,9 @@ export default class Map {
         const result = [];
 
         const minX = field.column - 5 >= 0 ? field.column - 5 : 0;
-        const maxX = field.column + 5 < this.columns ? field.column + 5 : this.columns;
+        const maxX = field.column + 5 < this.columns ? field.column + 5 : this.columns - 1;
         const minY = field.row - 5 >= 0 ? field.row - 5 : 0;
-        const maxY = field.row + 5 < this.rows ? field.row + 5 : this.rows;
+        const maxY = field.row + 5 < this.rows ? field.row + 5 : this.rows - 1;
 
         for (let x = minX; x <= maxX; x++) {
             for (let y = minY; y <= maxY; y++) {
