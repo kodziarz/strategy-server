@@ -1,5 +1,6 @@
 import { Logger } from "@nestjs/common";
 import SETTINGS from "../SETTINGS";
+import Building from "./Building";
 import MapField from "./MapField";
 import Grassland from "./mapFields/Grassland";
 
@@ -32,6 +33,25 @@ export default class Map {
         const column = Math.floor(x / SETTINGS.mapFieldSide);
         const row = Math.floor(y / SETTINGS.mapFieldSide);
         return this.mapFields[column][row];
+    };
+
+    getMapFieldsOfBuilding = (building: Building): MapField[] => {
+        const widthHalf = building.width / 2;
+        const lengthHalf = building.length / 2;
+
+        let result = [];
+        result.push(this.getMapFieldOfPosition(building.x - widthHalf, building.y + lengthHalf));
+
+        let field = this.getMapFieldOfPosition(building.x - widthHalf, building.y - lengthHalf);
+        if (!result.includes(field)) result.push(field);
+
+        field = this.getMapFieldOfPosition(building.x + widthHalf, building.y - lengthHalf);
+        if (!result.includes(field)) result.push(field);
+
+        field = this.getMapFieldOfPosition(building.x + widthHalf, building.y + lengthHalf);
+        if (!result.includes(field)) result.push(field);
+
+        return result;
     };
 
     //DEV

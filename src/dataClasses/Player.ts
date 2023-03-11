@@ -1,5 +1,6 @@
 import Building from "./game/Building";
 import MapField from "./game/MapField";
+import Opponent from "./game/Opponent";
 import User from "./User";
 
 /**
@@ -27,9 +28,19 @@ export default class Player {
     /**List of {@link Building | Buildings} owned by player. */
     readonly buildings: Building[] = [];
 
+    /**Data known to player about his opponents. */
+    readonly opponents: Opponent[] = [];
+
     constructor(
         readonly user: User
     ) {
         this.userId = user.id;
+    }
+
+    getOpponentById(userId: number): Opponent {
+        for (const opponent of this.opponents) {
+            if (opponent.userId == userId)
+                return opponent;
+        }
     }
 }
