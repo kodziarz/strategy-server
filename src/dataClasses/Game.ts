@@ -21,7 +21,7 @@ export default class Game {
         onObservedMapFieldChanged: (player: Player, changedFields: MapField[]) => void,
         onBuildingChanged: (player: Player, changedBuildings: Building[]) => void
     ) {
-        this.map = new Map(20, 20);
+        this.map = new Map(20, 40);
         this.onObservedMapFieldChanged = onObservedMapFieldChanged;
         this.onBuildingChanged = onBuildingChanged;
     }
