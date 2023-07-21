@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import User from 'src/dataClasses/User';
 import * as bcrypt from 'bcrypt';
 
 let user = new User("admin", "$2b$10$ZYc/dXp9vBNw6OtDrizXce", bcrypt.hashSync("admin", "$2b$10$ZYc/dXp9vBNw6OtDrizXce"));
-user.locationIds.push("a5c2b512-a8b8-11ed-b060-dcf505050c09");
+let user2 = new User("student", "$2b$10$o.KwpglTIp0RvZjo/useuO", bcrypt.hashSync("hasło", "$2b$10$o.KwpglTIp0RvZjo/useuO"));
 
-const users = [user];
+const users = [user, user2];
 
 @Injectable()
 export class UsersService {
