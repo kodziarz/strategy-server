@@ -6,6 +6,8 @@ import MapField from "./game/MapField";
 import Opponent from "./game/Opponent";
 import Player from "./Player";
 import User from "./User";
+import { GameGateway } from "src/game/game.gateway";
+import { v4 as uuid } from "uuid";
 
 /**Stores data about specific game. */
 export default class Game {
@@ -14,16 +16,13 @@ export default class Game {
     private currentPlayers: Player[] = [];
     private buildings: Building[] = [];
     private _isWaiting = true;
-    private readonly onObservedMapFieldChanged: (player: Player, changedFields: MapField[]) => void;
-    private readonly onBuildingChanged: (player: Player, changedBuildings: Building[]) => void;
+    // private readonly onObservedMapFieldChanged: (player: Player, changedFields: MapField[]) => void;
+    // private readonly onBuildingChanged: (player: Player, changedBuildings: Building[]) => void;
 
     constructor(
-        onObservedMapFieldChanged: (player: Player, changedFields: MapField[]) => void,
-        onBuildingChanged: (player: Player, changedBuildings: Building[]) => void
+        private readonly gameGateway: GameGateway
     ) {
         this.map = new Map(20, 40);
-        this.onObservedMapFieldChanged = onObservedMapFieldChanged;
-        this.onBuildingChanged = onBuildingChanged;
     }
 
     /**
@@ -68,13 +67,16 @@ export default class Game {
     };
 
     addBuilding = (building: Building, player: Player) => {
+        Object.assign(building, uuid());
+        //id of building should not be set by client - someone could set
+        // it to value of currently existing object on purpose
         player.buildings.push(building);
 
         // inform eligible players about change
         let changedMapFileds = this.map.getMapFieldsOfBuilding(building);
         this.currentPlayers.forEach((checkedPlayer) => {
             if (checkedPlayer == player) {
-                // send confirmation to client that data is saved
+                this.gameGateway.confirmBuildingPlaced(player, building);
             } else { // opponent may be eligible to know what happened
                 let playersChangedFields = [];
                 for (const field of changedMapFileds) {
@@ -106,8 +108,10 @@ export default class Game {
 
         // add them to players' list
         player.observedMapFields.push(...newObservedFields);
-        this.onObservedMapFieldChanged(player, newObservedFields);
+        // this.onObservedMapFieldChanged(player, newObservedFields);
+        Logger.debug("Tu można by odesłać jakieś dane użytkownikowi xdd");
 
+        // this.gameGateway.informAboutChangedMapFields(player, newObservedFields);
     };
 
     getPlayerByUserId = (userId: number) => {

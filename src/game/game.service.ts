@@ -5,6 +5,10 @@ import MapField from 'src/dataClasses/game/MapField';
 import Player from 'src/dataClasses/Player';
 import User from 'src/dataClasses/User';
 import { GameGateway } from './game.gateway';
+import FieldsTypes from 'src/dataClasses/game/mapFields/FieldsTypes';
+import Grassland from 'src/dataClasses/game/mapFields/Grassland';
+import BuildingsTypes from 'src/dataClasses/game/buildings/BuildingsTypes';
+import MainBuilding from 'src/dataClasses/game/buildings/MainBuilding';
 
 @Injectable()
 export class GameService {
@@ -15,9 +19,7 @@ export class GameService {
     /**Maps {@link Game | GameManagers} to {@link User | User's} ids. */
     private gameManagersOfPlayers: Map<number, Game>;
 
-    private handleObservedMapFieldChanged: (player: Player, changedFields: MapField[]) => void;
-    private handleBuildingChanged: (player: Player, changedBuildings: Building[]) => void;
-
+    private gameGateway: GameGateway;
 
     constructor() {
         this.gameManagersOfPlayers = new Map();
@@ -25,8 +27,7 @@ export class GameService {
 
     createNewGame = (): Game => {
         let game = new Game(
-            this.handleObservedMapFieldChanged,
-            this.handleBuildingChanged
+            this.gameGateway
         );
         this.gameManagers.push(game);
         return game;
@@ -49,11 +50,43 @@ export class GameService {
         return this.gameManagersOfPlayers.get(userId);
     };
 
-    setGameHandlers = (
-        handleObservedMapFieldChanged: (player: Player, changedFields: MapField[]) => void,
-        handleBuildingChanged: (player: Player, changedBuildings: Building[]) => void
-    ) => {
-        this.handleObservedMapFieldChanged = handleObservedMapFieldChanged;
-        this.handleBuildingChanged = handleBuildingChanged;
+    setGameGateway = (gameGateway: GameGateway) => {
+        this.gameGateway = gameGateway;
     };
+
+    /**
+     * Converts raw {@link MapField | MapField's} data to instance of specific
+     * {@link MapField}.
+     * @param mapFieldData Converted {@link MapField | MapField's} data.
+     * @returns Specific subclass of {@link MapField}.
+     */
+    instantiateMapField(mapFieldData: MapField): MapField {
+        switch (mapFieldData.type) {
+            case FieldsTypes.GRASSLAND:
+                return Object.assign(new Grassland(-1, -1), mapFieldData);
+                break;
+            default: throw new Error("Such MapField type as " + mapFieldData.type + " does not exist.");
+        }
+    }
+
+    /**
+     * Converts raw {@link Building | Building's} data to instance of specific
+     * {@link Building}.
+     * @param building Converted {@link Building | Building's} data.
+     * @returns Specific subclass of {@link Building}.
+     */
+    instantiateBuilding(building: Building): Building {
+        switch (building.type) {
+            case BuildingsTypes.MAIN:
+                return Object.assign(new MainBuilding(-1, -1), building);
+                break;
+            // Rest of types of Building to write here
+            /*
+            case BuildingsTypes.MINE:
+                return Object.assign(new Mine(-1, -1), building);
+                break;
+            */
+            default: throw new Error("Such Building type as " + building.type + " does not exist.");
+        }
+    }
 }

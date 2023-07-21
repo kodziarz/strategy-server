@@ -19,10 +19,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     private readonly authService: AuthService,
     private readonly gameService: GameService
   ) {
-    gameService.setGameHandlers(
-      this.handleObservedMapFieldChanged,
-      this.handleBuildingChanged
-    );
+    gameService.setGameGateway(this);
   }
 
   afterInit(server: any) {
@@ -47,18 +44,18 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     Logger.debug("Rozłączył się klient.");
   }
 
-  @SubscribeMessage('message')
-  handleMessage(client: any, payload: any): string {
-    return 'Hello world!';
-  }
+  // @SubscribeMessage('message')
+  // handleMessage(client: any, payload: any): string {
+  //   return 'Hello world!';
+  // }
 
-  @SubscribeMessage("test")
-  test(client: any) {
-    Logger.debug("Połączono na wydarzenie test na sockecie");
-    Logger.debug(client.user);
-    Logger.debug(client.game);
-    Logger.debug(client.player);
-  }
+  // @SubscribeMessage("test")
+  // test(client: any) {
+  //   Logger.debug("Połączono na wydarzenie test na sockecie");
+  //   Logger.debug(client.user);
+  //   Logger.debug(client.game);
+  //   Logger.debug(client.player);
+  // }
 
   /**
    * Handles {@link Game | Game's} event that observed map fields have changed.
@@ -66,7 +63,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
    * @param player Player whoose observed map fields have changed.
    * @param changedFields Map fields which have changed.
    */
-  handleObservedMapFieldChanged = (player: Player, changedFields: MapField[]) => {
+  informAboutChangedMapFields = (player: Player, changedFields: MapField[]) => {
     let socket = this.socketsOfPlayers.get(player.userId);
     socket.emit("map", {
       observedMapFields: changedFields
@@ -74,12 +71,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   };
 
   /**
-   * Handles {@link Game | Game's} event that buildings have changed.
-   * Sends them to the given player.
+   * Sends changed {@link Building | Buildings} to the given player.
    * @param player Player who is eligible to know about change.
    * @param changedBuildings Buildings which have been changed.
    */
-  handleBuildingChanged = (player: Player, changedBuildings: Building[]) => {
+  informAboutChangedBuildings = (player: Player, changedBuildings: Building[]) => {
     let socket = this.socketsOfPlayers.get(player.userId);
     socket.emit("opponent", {
       opponentId: player.userId,
@@ -110,5 +106,21 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         }
       };
     else throw new WsException("User has not joined any game");
+  }
+
+  @SubscribeMessage("building")
+  building(client: any, data: Building) {
+    Logger.debug("Odebrano wydarzenie building.");
+    let building = this.gameService.instantiateBuilding(data);
+    const game: Game = client.game;
+    game.addBuilding(building, client.player);
+  }
+
+  confirmBuildingPlaced(player: Player, placedBuilding: Building) {
+    Logger.debug("Potwierdzam dodanie budynku.");
+    let socket = this.socketsOfPlayers.get(player.userId);
+    socket.emit("buildingPlaced", {
+      placedBuilding
+    });
   }
 }
