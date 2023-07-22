@@ -1,6 +1,6 @@
-import Building from "./game/Building";
-import MapField from "./game/MapField";
-import Opponent from "./game/Opponent";
+import Building from "./../../../strategy-common/dataClasses/Building";
+import MapField from "./../../../strategy-common/dataClasses/MapField";
+import Opponent from "./../../../strategy-common/dataClasses/Opponent";
 import User from "./User";
 
 /**

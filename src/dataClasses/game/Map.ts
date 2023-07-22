@@ -1,8 +1,8 @@
 import { Logger } from "@nestjs/common";
 import SETTINGS from "../SETTINGS";
-import Building from "./Building";
-import MapField from "./MapField";
-import Grassland from "./mapFields/Grassland";
+import Building from "./../../../../strategy-common/dataClasses/Building";
+import MapField from "./../../../../strategy-common/dataClasses/MapField";
+import Grassland from "./../../../../strategy-common/dataClasses/mapFields/Grassland";
 
 export default class Map {
     mapFields: MapField[][] = [];

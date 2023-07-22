@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import Game from 'src/dataClasses/Game';
-import Building from 'src/dataClasses/game/Building';
-import MapField from 'src/dataClasses/game/MapField';
+import Building from './../../../strategy-common/dataClasses/Building';
+import MapField from './../../../strategy-common/dataClasses/MapField';
 import Player from 'src/dataClasses/Player';
 import User from 'src/dataClasses/User';
 import { GameGateway } from './game.gateway';
-import FieldsTypes from 'src/dataClasses/game/mapFields/FieldsTypes';
-import Grassland from 'src/dataClasses/game/mapFields/Grassland';
-import BuildingsTypes from 'src/dataClasses/game/buildings/BuildingsTypes';
-import MainBuilding from 'src/dataClasses/game/buildings/MainBuilding';
+import FieldsTypes from './../../../strategy-common/dataClasses/mapFields/FieldsTypes';
+import Grassland from './../../../strategy-common/dataClasses/mapFields/Grassland';
+import BuildingsTypes from './../../../strategy-common/dataClasses/buildings/BuildingsTypes';
+import MainBuilding from './../../../strategy-common/dataClasses/buildings/MainBuilding';
 
 @Injectable()
 export class GameService {

@@ -3,8 +3,8 @@ import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessa
 import { AuthService, InvalidTokenException } from 'src/auth/auth.service';
 import { WsGuard } from 'src/auth/guards/ws-auth.guard';
 import Game from 'src/dataClasses/Game';
-import Building from 'src/dataClasses/game/Building';
-import MapField from 'src/dataClasses/game/MapField';
+import Building from './../../../strategy-common/dataClasses/Building';
+import MapField from './../../../strategy-common/dataClasses/MapField';
 import Player from 'src/dataClasses/Player';
 import { GameService } from './game.service';
 

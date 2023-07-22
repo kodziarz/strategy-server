@@ -1,9 +1,8 @@
 import { Logger } from "@nestjs/common";
-import Building from "./game/Building";
-import MainBuilding from "./game/buildings/MainBuilding";
+import Building from "./../../../strategy-common/dataClasses/Building";
+import MainBuilding from "./../../../strategy-common/dataClasses/buildings/MainBuilding";
 import Map from "./game/Map";
-import MapField from "./game/MapField";
-import Opponent from "./game/Opponent";
+import Opponent from "./../../../strategy-common/dataClasses/Opponent";
 import Player from "./Player";
 import User from "./User";
 import { GameGateway } from "src/game/game.gateway";
@@ -67,7 +66,7 @@ export default class Game {
     };
 
     addBuilding = (building: Building, player: Player) => {
-        Object.assign(building, uuid());
+        Object.assign(building, { id: uuid() });
         //id of building should not be set by client - someone could set
         // it to value of currently existing object on purpose
         player.buildings.push(building);
