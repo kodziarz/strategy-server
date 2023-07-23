@@ -7,6 +7,7 @@ import Building from './../../../strategy-common/dataClasses/Building';
 import MapField from './../../../strategy-common/dataClasses/MapField';
 import Player from 'src/dataClasses/Player';
 import { GameService } from './game.service';
+import { instantiateBuilding } from "./../../../strategy-common/classInstantiatingService";
 
 @UseGuards(WsGuard)
 @WebSocketGateway({
@@ -111,7 +112,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("building")
   building(client: any, data: Building) {
     Logger.debug("Odebrano wydarzenie building.");
-    let building = this.gameService.instantiateBuilding(data);
+    let building = instantiateBuilding(data);
     const game: Game = client.game;
     game.addBuilding(building, client.player);
   }

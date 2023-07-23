@@ -54,39 +54,39 @@ export class GameService {
         this.gameGateway = gameGateway;
     };
 
-    /**
-     * Converts raw {@link MapField | MapField's} data to instance of specific
-     * {@link MapField}.
-     * @param mapFieldData Converted {@link MapField | MapField's} data.
-     * @returns Specific subclass of {@link MapField}.
-     */
-    instantiateMapField(mapFieldData: MapField): MapField {
-        switch (mapFieldData.type) {
-            case FieldsTypes.GRASSLAND:
-                return Object.assign(new Grassland(-1, -1), mapFieldData);
-                break;
-            default: throw new Error("Such MapField type as " + mapFieldData.type + " does not exist.");
-        }
-    }
+    // /**
+    //  * Converts raw {@link MapField | MapField's} data to instance of specific
+    //  * {@link MapField}.
+    //  * @param mapFieldData Converted {@link MapField | MapField's} data.
+    //  * @returns Specific subclass of {@link MapField}.
+    //  */
+    // instantiateMapField(mapFieldData: MapField): MapField {
+    //     switch (mapFieldData.type) {
+    //         case FieldsTypes.GRASSLAND:
+    //             return Object.assign(new Grassland(-1, -1), mapFieldData);
+    //             break;
+    //         default: throw new Error("Such MapField type as " + mapFieldData.type + " does not exist.");
+    //     }
+    // }
 
-    /**
-     * Converts raw {@link Building | Building's} data to instance of specific
-     * {@link Building}.
-     * @param building Converted {@link Building | Building's} data.
-     * @returns Specific subclass of {@link Building}.
-     */
-    instantiateBuilding(building: Building): Building {
-        switch (building.type) {
-            case BuildingsTypes.MAIN:
-                return Object.assign(new MainBuilding(-1, -1), building);
-                break;
-            // Rest of types of Building to write here
-            /*
-            case BuildingsTypes.MINE:
-                return Object.assign(new Mine(-1, -1), building);
-                break;
-            */
-            default: throw new Error("Such Building type as " + building.type + " does not exist.");
-        }
-    }
+    // /**
+    //  * Converts raw {@link Building | Building's} data to instance of specific
+    //  * {@link Building}.
+    //  * @param building Converted {@link Building | Building's} data.
+    //  * @returns Specific subclass of {@link Building}.
+    //  */
+    // instantiateBuilding(building: Building): Building {
+    //     switch (building.type) {
+    //         case BuildingsTypes.MAIN:
+    //             return Object.assign(new MainBuilding(-1, -1), building);
+    //             break;
+    //         // Rest of types of Building to write here
+    //         /*
+    //         case BuildingsTypes.MINE:
+    //             return Object.assign(new Mine(-1, -1), building);
+    //             break;
+    //         */
+    //         default: throw new Error("Such Building type as " + building.type + " does not exist.");
+    //     }
+    // }
 }
