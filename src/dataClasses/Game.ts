@@ -85,7 +85,7 @@ export default class Game {
                 if (playersChangedFields.length > 0) { // is eligible
                     let opponent = checkedPlayer.getOpponentById(player.userId);
                     opponent.buildings.push(building);
-
+                    this.gameGateway.informAboutChangedBuildings(checkedPlayer, playersChangedFields);
                 }
             }
             // this.onObservedMapFieldChanged(player, playersChangedFields);
@@ -107,6 +107,7 @@ export default class Game {
 
         // add them to players' list
         player.observedMapFields.push(...newObservedFields);
+        this.gameGateway.informAboutChangedMapFields(player, newObservedFields);
         // this.onObservedMapFieldChanged(player, newObservedFields);
         Logger.debug("Tu można by odesłać jakieś dane użytkownikowi xdd");
 
