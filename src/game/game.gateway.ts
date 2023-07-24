@@ -5,7 +5,7 @@ import { WsGuard } from 'src/auth/guards/ws-auth.guard';
 import Game from 'src/dataClasses/Game';
 import Building from './../../../strategy-common/dataClasses/Building';
 import MapField from './../../../strategy-common/dataClasses/MapField';
-import Player from 'src/dataClasses/Player';
+import Player from './../../../strategy-common/dataClasses/Player';
 import { GameService } from './game.service';
 import { instantiateBuilding } from "./../../../strategy-common/classInstantiatingService";
 
@@ -45,18 +45,40 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     Logger.debug("Rozłączył się klient.");
   }
 
-  // @SubscribeMessage('message')
-  // handleMessage(client: any, payload: any): string {
-  //   return 'Hello world!';
-  // }
+  /**
+   * Gets all available for the {@link Player} data about map.
+   * @param client Socket of connection.
+   * @returns Data about map, to which {@link Player} has access to.
+   */
+  @SubscribeMessage("map")
+  map(client: any) {
+    Logger.debug("Odebrano wydarzenie map.");
+    const player: Player = client.player;
+    const game: Game = client.game;
+    if (player != undefined)
+      return {
+        event: "map",
+        data: player
+      };
+    else throw new WsException("User has not joined any game");
+  }
 
-  // @SubscribeMessage("test")
-  // test(client: any) {
-  //   Logger.debug("Połączono na wydarzenie test na sockecie");
-  //   Logger.debug(client.user);
-  //   Logger.debug(client.game);
-  //   Logger.debug(client.player);
-  // }
+  @SubscribeMessage("building")
+  building(client: any, data: Building) {
+    Logger.debug("Odebrano wydarzenie building.");
+    let building = instantiateBuilding(data);
+    const game: Game = client.game;
+    game.addBuilding(building, client.player);
+  }
+
+  confirmBuildingPlaced(player: Player, placedBuilding: Building) {
+    Logger.debug("Potwierdzam dodanie budynku.");
+    let socket = this.socketsOfPlayers.get(player.userId);
+    socket.emit("buildingPlaced", {
+      placedBuilding
+    });
+  }
+
 
   /**
    * Handles {@link Game | Game's} event that observed map fields have changed.
@@ -83,45 +105,4 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       changedBuildings: changedBuildings
     });
   };
-
-  /**
-   * Gets all available for the {@link Player} data about map.
-   * @param client Socket of connection.
-   * @returns Data about map, to which {@link Player} has access to.
-   */
-  @SubscribeMessage("map")
-  map(client: any) {
-    Logger.debug("Odebrano wydarzenie map.");
-    const player: Player = client.player;
-    const game: Game = client.game;
-    if (player != undefined)
-      return {
-        event: "map",
-        data: {
-          buildings: player.buildings,
-          observedMapFields: player.observedMapFields,
-          visitedMapFields: player.visitedMapFields,
-          rows: game.getRows(),
-          columns: game.getColumns(),
-          opponents: player.opponents
-        }
-      };
-    else throw new WsException("User has not joined any game");
-  }
-
-  @SubscribeMessage("building")
-  building(client: any, data: Building) {
-    Logger.debug("Odebrano wydarzenie building.");
-    let building = instantiateBuilding(data);
-    const game: Game = client.game;
-    game.addBuilding(building, client.player);
-  }
-
-  confirmBuildingPlaced(player: Player, placedBuilding: Building) {
-    Logger.debug("Potwierdzam dodanie budynku.");
-    let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("buildingPlaced", {
-      placedBuilding
-    });
-  }
 }

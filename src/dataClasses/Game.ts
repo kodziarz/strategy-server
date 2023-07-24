@@ -3,7 +3,7 @@ import Building from "./../../../strategy-common/dataClasses/Building";
 import MainBuilding from "./../../../strategy-common/dataClasses/buildings/MainBuilding";
 import Map from "./game/Map";
 import Opponent from "./../../../strategy-common/dataClasses/Opponent";
-import Player from "./Player";
+import Player from "../../../strategy-common/dataClasses/Player";
 import User from "./User";
 import { GameGateway } from "src/game/game.gateway";
 import { v4 as uuid } from "uuid";
@@ -37,11 +37,15 @@ export default class Game {
         return false;
     };
 
-    /**Adds {@link User} to current game ({@link Game}) */
+    /**Adds {@link User} to the game ({@link Game}) */
     addPlayer = (user: User) => {
 
         //init players data
-        let player = new Player(user);
+        let player = new Player(
+            user.id,
+            this.getColumns(),
+            this.getRows()
+        );
         this.currentPlayers.forEach((opponentPlayer) => {
             player.opponents.push(new Opponent(opponentPlayer.userId));
             // add player as an opponent to other players
@@ -88,7 +92,6 @@ export default class Game {
                     this.gameGateway.informAboutChangedBuildings(checkedPlayer, playersChangedFields);
                 }
             }
-            // this.onObservedMapFieldChanged(player, playersChangedFields);
         });
 
         // get new observed mapFields, to send them to client
@@ -108,10 +111,6 @@ export default class Game {
         // add them to players' list
         player.observedMapFields.push(...newObservedFields);
         this.gameGateway.informAboutChangedMapFields(player, newObservedFields);
-        // this.onObservedMapFieldChanged(player, newObservedFields);
-        Logger.debug("Tu można by odesłać jakieś dane użytkownikowi xdd");
-
-        // this.gameGateway.informAboutChangedMapFields(player, newObservedFields);
     };
 
     getPlayerByUserId = (userId: number) => {
