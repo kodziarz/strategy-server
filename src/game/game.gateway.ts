@@ -88,7 +88,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
    */
   informAboutChangedMapFields = (player: Player, changedFields: MapField[]) => {
     let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("map", {
+    socket.emit("mapFields", {
       observedMapFields: changedFields
     });
   };
@@ -100,7 +100,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
    */
   informAboutChangedBuildings = (player: Player, changedBuildings: Building[]) => {
     let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("opponent", {
+    socket.emit("opponentBuildng", {
       opponentId: player.userId,
       changedBuildings: changedBuildings
     });
