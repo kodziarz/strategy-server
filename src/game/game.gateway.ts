@@ -8,6 +8,7 @@ import MapField from './../../../strategy-common/dataClasses/MapField';
 import Player from './../../../strategy-common/dataClasses/Player';
 import { GameService } from './game.service';
 import { instantiateBuilding } from "./../../../strategy-common/classInstantiatingService";
+import Opponent from '../../../strategy-common/dataClasses/Opponent';
 
 @UseGuards(WsGuard)
 @WebSocketGateway({
@@ -71,12 +72,20 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     game.addBuilding(building, client.player);
   }
 
+  /**
+   * Sends to {@link Player} information about joined opponent.
+   * @param player Player, who is informed about joined opponent.
+   * @param opponent Opponent data to send.
+   */
+  informThatOpponentJoined = (player: Player, opponent: Opponent) => {
+    let socket = this.socketsOfPlayers.get(player.userId);
+    socket.emit("opponentJoined", opponent);
+  };
+
   confirmBuildingPlaced(player: Player, placedBuilding: Building) {
     Logger.debug("Potwierdzam dodanie budynku.");
     let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("buildingPlaced", {
-      placedBuilding
-    });
+    socket.emit("buildingPlaced", placedBuilding);
   }
 
 
@@ -95,13 +104,19 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   /**
    * Sends changed {@link Building | Buildings} to the given player.
-   * @param player Player who is eligible to know about change.
+   * @param informedPlayer Player who is eligible to know about change.
+   * @param buildingOwner Player who is the owner of the building.
    * @param changedBuildings Buildings which have been changed.
    */
-  informAboutChangedBuildings = (player: Player, changedBuildings: Building[]) => {
-    let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("opponentBuildng", {
-      opponentId: player.userId,
+  informAboutOpponentChangedBuildings = (
+    informedPlayer: Player,
+    buildingOwner: Player,
+    changedBuildings: Building[]
+  ) => {
+    Logger.debug("Informuję gracza, że przeciwnik ma budynek w jego polu widzenia.");
+    let socket = this.socketsOfPlayers.get(informedPlayer.userId);
+    socket.emit("opponentBuilding", {
+      opponentId: buildingOwner.userId,
       changedBuildings: changedBuildings
     });
   };
