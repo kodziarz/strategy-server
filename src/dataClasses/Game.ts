@@ -46,11 +46,14 @@ export default class Game {
             this.getRows()
         );
         this.currentPlayers.forEach((opponentPlayer) => {
-            player.opponents.push(new Opponent(opponentPlayer.userId));
+            // adds another player as opponent to the player
+            let alreadyExistingOpponentData = new Opponent(opponentPlayer.userId);
+            player.opponents.push(alreadyExistingOpponentData);
+
             // add player as an opponent to other players
-            let playersOpponentData = new Opponent(player.userId);
-            opponentPlayer.opponents.push(playersOpponentData);
-            this.gameGateway.informThatOpponentJoined(opponentPlayer, playersOpponentData);
+            let addedPlayerOpponentData = new Opponent(player.userId);
+            opponentPlayer.opponents.push(addedPlayerOpponentData);
+            this.gameGateway.informThatOpponentJoined(opponentPlayer, addedPlayerOpponentData);
         });
 
         this.currentPlayers.push(player);
@@ -60,7 +63,8 @@ export default class Game {
             mainBuildingField.x,
             mainBuildingField.y
         );
-        player.buildings.push(mainBuilding);
+        // player.buildings.push(mainBuilding);
+        this.insertBuildingToDataStructure(player, mainBuilding);
         this.informEligibleOpponentsAboutPlacedBuilding(player, mainBuilding);
 
         //DEV dodawanie obserwowanych pól do listy
@@ -69,16 +73,31 @@ export default class Game {
                 mainBuildingField.x,
                 mainBuildingField.y
             ));
+
+        // adding oppontents' buildings to players' data about opponents.
+        this.currentPlayers.forEach((checkedPlayer) => {
+            if (checkedPlayer != player) {
+                checkedPlayer.buildings.forEach((checkedPlayersBuilding) => {
+                    checkedPlayersBuilding.occupiedFields.forEach((occupiedMapfield) => {
+                        if (player.observedMapFields.includes(occupiedMapfield))
+                            player.getOpponentById(checkedPlayer.userId).buildings.push(checkedPlayersBuilding);
+                    });
+                });
+            }
+        });
     };
 
     addBuilding = (building: Building, player: Player) => {
-        Object.assign(building, { id: uuid() });
         //id of building should not be set by client - someone could set
         // it to value of currently existing object on purpose
-        player.buildings.push(building);
+        Object.assign(building, { id: uuid() });
+        // player.buildings.push(building);
+        this.insertBuildingToDataStructure(player, building);
 
         // inform about building
         this.gameGateway.confirmBuildingPlaced(player, building);
+        // let changedMapFileds = this.map.getMapFieldsOfBuilding(building);
+        // changedMapFileds.forEach((changedMapField) => { changedMapField.buildings.push(building); });
         this.informEligibleOpponentsAboutPlacedBuilding(player, building);
 
         // get new observed mapFields, to send them to client
@@ -98,6 +117,32 @@ export default class Game {
         // add them to players' list
         player.observedMapFields.push(...newObservedFields);
         this.gameGateway.informAboutChangedMapFields(player, newObservedFields);
+    };
+
+    /**
+     * Inserts building into all necessary data structures. Does not send this
+     * data to clients.
+     * Data is insterted into: player.building, fields in this.map, opponentPlayers.opponent.buildings
+     * @param player Owner of the placed building.
+     * @param building Placed building.
+     */
+    insertBuildingToDataStructure = (player: Player, building: Building) => {
+        player.buildings.push(building);
+
+        let changedMapFields = this.map.getMapFieldsOfBuilding(building);
+        changedMapFields.forEach((changedMapFiled) => {
+            changedMapFiled.buildings.push(building);
+        });
+
+        this.currentPlayers.forEach((updatedPlayer) => {
+            if (updatedPlayer != player) {
+                let opponent = updatedPlayer.getOpponentById(player.userId);
+                opponent.buildings.push(building);
+            }
+        });
+
+        // building.occupiedFields.push(...changedMapFields);
+        changedMapFields.forEach((mapField) => { building.occupiedFields.push(mapField); });
     };
 
     /**
@@ -136,6 +181,10 @@ export default class Game {
 
     getColumns = () => {
         return this.map.columns;
+    };
+
+    getMapFields = () => {
+        return this.map.mapFields;
     };
 
 

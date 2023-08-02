@@ -59,7 +59,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     if (player != undefined)
       return {
         event: "map",
-        data: player
+        data: player.toJSON()
       };
     else throw new WsException("User has not joined any game");
   }
@@ -67,8 +67,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("building")
   building(client: any, data: Building) {
     Logger.debug("Odebrano wydarzenie building.");
-    let building = instantiateBuilding(data);
+    Logger.debug("Wydarzenie building wymaga przeanalizowania pod kątem tego, jak zinstancjalizować otrzymany obiekt Building");
     const game: Game = client.game;
+    let building = instantiateBuilding(data);
     game.addBuilding(building, client.player);
   }
 
@@ -79,13 +80,13 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
    */
   informThatOpponentJoined = (player: Player, opponent: Opponent) => {
     let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("opponentJoined", opponent);
+    socket.emit("opponentJoined", opponent.getSimplified());
   };
 
   confirmBuildingPlaced(player: Player, placedBuilding: Building) {
     Logger.debug("Potwierdzam dodanie budynku.");
     let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("buildingPlaced", placedBuilding);
+    socket.emit("buildingPlaced", placedBuilding.getSimplified());
   }
 
 
@@ -98,7 +99,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   informAboutChangedMapFields = (player: Player, changedFields: MapField[]) => {
     let socket = this.socketsOfPlayers.get(player.userId);
     socket.emit("mapFields", {
-      observedMapFields: changedFields
+      observedMapFields: changedFields.map((field) => { return field.getSimplified(); })
     });
   };
 
@@ -117,7 +118,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     let socket = this.socketsOfPlayers.get(informedPlayer.userId);
     socket.emit("opponentBuilding", {
       opponentId: buildingOwner.userId,
-      changedBuildings: changedBuildings
+      changedBuildings: changedBuildings.map((building) => { return building.getSimplified(); })
     });
   };
 }
