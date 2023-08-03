@@ -86,7 +86,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   confirmBuildingPlaced(player: Player, placedBuilding: Building) {
     Logger.debug("Potwierdzam dodanie budynku.");
     let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("buildingPlaced", placedBuilding.getSimplified());
+    socket.emit("buildingPlaced", placedBuilding.getWithIdentifiers());
   }
 
 
@@ -118,7 +118,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     let socket = this.socketsOfPlayers.get(informedPlayer.userId);
     socket.emit("opponentBuilding", {
       opponentId: buildingOwner.userId,
-      changedBuildings: changedBuildings.map((building) => { return building.getSimplified(); })
+      changedBuildings: changedBuildings.map((building) => { return building.getWithIdentifiers(); })
     });
   };
 }

@@ -34,7 +34,8 @@ export class AppController {
   @Get("joinGame")
   joinGame(@Request() req) {
     Logger.debug("zapytanie na joinGame");
-    this.gameService.addUserToGame(req.user);
+    if (!req.user.currentGame)
+      this.gameService.addUserToGame(req.user);
     Logger.debug("dodano gracza do gry.");
     return "xd";
   }

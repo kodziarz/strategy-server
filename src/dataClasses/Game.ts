@@ -20,7 +20,7 @@ export default class Game {
     constructor(
         private readonly gameGateway: GameGateway
     ) {
-        this.map = new Map(5, 6);
+        this.map = new Map(50, 100);
     }
 
     /**
@@ -60,8 +60,8 @@ export default class Game {
 
         let mainBuildingField = this.map.getStartMapField();
         let mainBuilding = new MainBuilding(
-            mainBuildingField.x,
-            mainBuildingField.y
+            mainBuildingField.centerX,
+            mainBuildingField.centerY
         );
         // player.buildings.push(mainBuilding);
         this.insertBuildingToDataStructure(player, mainBuilding);
@@ -70,8 +70,8 @@ export default class Game {
         //DEV dodawanie obserwowanych pól do listy
         player.observedMapFields.push(
             ...this.map.getObservableMapFieldsFromPosition(
-                mainBuildingField.x,
-                mainBuildingField.y
+                mainBuildingField.centerX,
+                mainBuildingField.centerY
             ));
 
         // adding oppontents' buildings to players' data about opponents.

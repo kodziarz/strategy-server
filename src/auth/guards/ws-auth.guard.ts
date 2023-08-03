@@ -46,7 +46,7 @@ export class WsGuard implements CanActivate {
                 Object.assign(client, { user });
 
                 if (user != undefined) {
-                    let game = this.gameService.getGameOfUser(user.id);
+                    let game = user.currentGame;
                     Object.assign(client, { game });
 
                     if (game != undefined) {
