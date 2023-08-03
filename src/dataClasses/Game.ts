@@ -61,7 +61,8 @@ export default class Game {
         let mainBuildingField = this.map.getStartMapField();
         let mainBuilding = new MainBuilding(
             mainBuildingField.centerX,
-            mainBuildingField.centerY
+            mainBuildingField.centerY,
+            player.userId
         );
         // player.buildings.push(mainBuilding);
         this.insertBuildingToDataStructure(player, mainBuilding);
@@ -90,8 +91,11 @@ export default class Game {
     addBuilding = (building: Building, player: Player) => {
         //id of building should not be set by client - someone could set
         // it to value of currently existing object on purpose
-        Object.assign(building, { id: uuid() });
-        // player.buildings.push(building);
+        // the same with ownerId
+        Object.assign(building, {
+            id: uuid(),
+            ownerId: player.userId
+        });
         this.insertBuildingToDataStructure(player, building);
 
         // inform about building

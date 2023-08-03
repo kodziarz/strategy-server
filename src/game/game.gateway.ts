@@ -68,6 +68,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   building(client: any, data: Building) {
     Logger.debug("Odebrano wydarzenie building.");
     Logger.debug("Wydarzenie building wymaga przeanalizowania pod kątem tego, jak zinstancjalizować otrzymany obiekt Building");
+    //DEV potrzebna analiza
     const game: Game = client.game;
     let building = instantiateBuilding(data);
     game.addBuilding(building, client.player);
