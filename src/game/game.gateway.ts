@@ -9,7 +9,8 @@ import Player from './../../../strategy-common/dataClasses/Player';
 import { GameService } from './game.service';
 import { instantiateBuilding } from "./../../../strategy-common/classInstantiatingService";
 import Opponent from '../../../strategy-common/dataClasses/Opponent';
-import MapChangedMessage from "./../../../strategy-common/socketMessagesClasses/mapChangesMessage";
+import MapChangesMessage from "./../../../strategy-common/socketioMessagesClasses/MapChangesMessage";
+import BuildingWithIdentifiers from '../../../strategy-common/socketioMessagesClasses/BuildingWithIdentifiers';
 
 @UseGuards(WsGuard)
 @WebSocketGateway({
@@ -66,10 +67,8 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   }
 
   @SubscribeMessage("building")
-  building(client: any, data: Building) {
+  building(client: any, data: BuildingWithIdentifiers) {
     Logger.debug("Odebrano wydarzenie building.");
-    Logger.debug("Wydarzenie building wymaga przeanalizowania pod kątem tego, jak zinstancjalizować otrzymany obiekt Building");
-    //DEV potrzebna analiza
     const game: Game = client.game;
     let building = instantiateBuilding(data);
     game.addBuilding(building, client.player);
@@ -105,7 +104,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     changedBuildings: Building[] | null
   ) => {
     let socket = this.socketsOfPlayers.get(player.userId);
-    let response: MapChangedMessage = {};
+    let response: MapChangesMessage = {};
 
     if (changedFields && changedFields.length > 0)
       response.changedFields = changedFields.map((field) => { return field.getWithIdentifiers(); });
