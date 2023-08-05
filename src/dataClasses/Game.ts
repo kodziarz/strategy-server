@@ -8,6 +8,7 @@ import User from "./User";
 import { GameGateway } from "src/game/game.gateway";
 import { v4 as uuid } from "uuid";
 import MapField from "../../../strategy-common/dataClasses/MapField";
+import Unit from "../../../strategy-common/dataClasses/Unit";
 
 /**Stores data about specific game. */
 export default class Game {
@@ -103,22 +104,65 @@ export default class Game {
         this.informEligibleOpponentsAboutPlacedBuilding(player, building);
 
         // get new observed mapFields, to send them to client
-        let observedFields = this.map.getObservableMapFieldsFromPosition(
+        let newObservedFields = this.getNewObservedMapFieldsFromPosition(
             building.x,
-            building.y
+            building.y,
+            player
         );
-        let newObservedFields: MapField[] = [];
-        for (let i = 0; i < observedFields.length; i++) {
-            const observedField = observedFields[i];
-            if (player.observedMapFields.every((alreadyObsevedField) => {
-                return alreadyObsevedField != observedField;
-            }))
-                newObservedFields.push(observedField);
-        }
 
         // add them to players' list
         player.observedMapFields.push(...newObservedFields);
 
+        let discoveredBuildings = this.getNewBuildingsFromNewObservedFields(newObservedFields);
+        //TODO units should also be discovered
+
+        this.gameGateway.informAboutMapChanges(player, newObservedFields, Array.from(discoveredBuildings));
+    };
+
+    addUnit = (unit: Unit, player: Player) => {
+        //id of unit should not be set by client - someone could set
+        // it to value of currently existing object on purpose
+        // the same with ownerId
+        Object.assign(unit, {
+            id: uuid(),
+            ownerId: player.userId
+        });
+        // this.insertBuildingToDataStructure(player, building);
+        player.units.push(unit);
+
+        // inform about building
+        this.gameGateway.confirmUnitCreated(player, unit);
+        // this.informEligibleOpponentsAboutPlacedBuilding(player, building);
+
+        // get new observed mapFields, to send them to client
+        let newObservedFields = this.getNewObservedMapFieldsFromPosition(
+            unit.x,
+            unit.y,
+            player
+        );
+        // add them to players' list
+        player.observedMapFields.push(...newObservedFields);
+
+        let discoveredBuildings = this.getNewBuildingsFromNewObservedFields(newObservedFields);
+
+
+        this.gameGateway.informAboutMapChanges(player, newObservedFields, Array.from(discoveredBuildings));
+    };
+
+    getNewObservedMapFieldsFromPosition = (x: number, y: number, player: Player) => {
+        let observedFields = this.map.getObservableMapFieldsFromPosition(x, y);
+        let newObservedFields: MapField[] = [];
+        for (let i = 0; i < observedFields.length; i++) {
+            const observedField = observedFields[i];
+            if (!player.observedMapFields.find((alreadyObsevedField) => {
+                return alreadyObsevedField == observedField;
+            }))
+                newObservedFields.push(observedField);
+        }
+        return newObservedFields;
+    };
+
+    getNewBuildingsFromNewObservedFields = (newObservedFields: MapField[]) => {
         let discoveredBuildings = new Set<Building>();
         newObservedFields.forEach((newObservedField) => {
             //every building on discovered mapFields is new (even if was noticed before)
@@ -126,8 +170,19 @@ export default class Game {
                 discoveredBuildings.add(building);
             });
         });
-        this.gameGateway.informAboutMapChanges(player, newObservedFields, Array.from(discoveredBuildings));
+        return discoveredBuildings;
     };
+
+    // getNewUnitsFromNewObservedFields = (newObservedFields: MapField[]) => {
+    //     let discoveredBuildings = new Set<Unit>();
+    //     newObservedFields.forEach((newObservedField) => {
+    //         //every building on discovered mapFields is new (even if was noticed before)
+    //         newObservedField.buildings.forEach((building) => {
+    //             discoveredBuildings.add(building);
+    //         });
+    //     });
+    //     return discoveredBuildings;
+    // };
 
     /**
      * Inserts building into all necessary data structures. Does not send this

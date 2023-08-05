@@ -7,10 +7,11 @@ import Building from './../../../strategy-common/dataClasses/Building';
 import MapField from './../../../strategy-common/dataClasses/MapField';
 import Player from './../../../strategy-common/dataClasses/Player';
 import { GameService } from './game.service';
-import { instantiateBuilding } from "./../../../strategy-common/classInstantiatingService";
+import { instantiateBuilding, instantiateUnit } from "./../../../strategy-common/classInstantiatingService";
 import Opponent from '../../../strategy-common/dataClasses/Opponent';
 import MapChangesMessage from "./../../../strategy-common/socketioMessagesClasses/MapChangesMessage";
 import BuildingWithIdentifiers from '../../../strategy-common/socketioMessagesClasses/BuildingWithIdentifiers';
+import Unit from '../../../strategy-common/dataClasses/Unit';
 
 @UseGuards(WsGuard)
 @WebSocketGateway({
@@ -74,6 +75,14 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     game.addBuilding(building, client.player);
   }
 
+  @SubscribeMessage("unit")
+  unit(client: any, data: Unit) {
+    Logger.debug("Odebrano wydarzenie unit.");
+    const game: Game = client.game;
+    let unit = instantiateUnit(data);
+    game.addUnit(unit, client.player);
+  }
+
   /**
    * Sends to {@link Player} information about joined opponent.
    * @param player Player, who is informed about joined opponent.
@@ -90,6 +99,12 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     Logger.debug("Potwierdzam dodanie budynku.");
     let socket = this.socketsOfPlayers.get(player.userId);
     socket.emit("buildingPlaced", placedBuilding.getWithIdentifiers());
+  }
+
+  confirmUnitCreated(player: Player, createdUnit: Unit) {
+    Logger.debug("Potwierdzam utworzenie jednostki.");
+    let socket = this.socketsOfPlayers.get(player.userId);
+    socket.emit("unitCreated", createdUnit);
   }
 
   /**
