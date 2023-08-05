@@ -20,7 +20,7 @@ export default class Game {
     constructor(
         private readonly gameGateway: GameGateway
     ) {
-        this.map = new Map(50, 100);
+        this.map = new Map(10, 20);
     }
 
     /**
@@ -100,8 +100,6 @@ export default class Game {
 
         // inform about building
         this.gameGateway.confirmBuildingPlaced(player, building);
-        // let changedMapFileds = this.map.getMapFieldsOfBuilding(building);
-        // changedMapFileds.forEach((changedMapField) => { changedMapField.buildings.push(building); });
         this.informEligibleOpponentsAboutPlacedBuilding(player, building);
 
         // get new observed mapFields, to send them to client
@@ -109,7 +107,7 @@ export default class Game {
             building.x,
             building.y
         );
-        let newObservedFields = [];
+        let newObservedFields: MapField[] = [];
         for (let i = 0; i < observedFields.length; i++) {
             const observedField = observedFields[i];
             if (player.observedMapFields.every((alreadyObsevedField) => {
@@ -120,7 +118,15 @@ export default class Game {
 
         // add them to players' list
         player.observedMapFields.push(...newObservedFields);
-        this.gameGateway.informAboutChangedMapFields(player, newObservedFields);
+
+        let discoveredBuildings = new Set<Building>();
+        newObservedFields.forEach((newObservedField) => {
+            //every building on discovered mapFields is new (even if was noticed before)
+            newObservedField.buildings.forEach((building) => {
+                discoveredBuildings.add(building);
+            });
+        });
+        this.gameGateway.informAboutMapChanges(player, newObservedFields, Array.from(discoveredBuildings));
     };
 
     /**
@@ -140,13 +146,21 @@ export default class Game {
 
         this.currentPlayers.forEach((updatedPlayer) => {
             if (updatedPlayer != player) {
-                let opponent = updatedPlayer.getOpponentById(player.userId);
-                opponent.buildings.push(building);
+                let isObserved = false;
+                for (let changedMapField of changedMapFields) {
+                    if (updatedPlayer.observedMapFields.includes(changedMapField)) {
+                        isObserved = true;
+                        break;
+                    }
+                }
+                if (isObserved) {
+                    let opponent = updatedPlayer.getOpponentById(player.userId);
+                    opponent.buildings.push(building);
+                }
             }
         });
 
-        // building.occupiedFields.push(...changedMapFields);
-        changedMapFields.forEach((mapField) => { building.occupiedFields.push(mapField); });
+        building.occupiedFields.push(...changedMapFields);
     };
 
     /**
@@ -155,18 +169,18 @@ export default class Game {
      * @param building Placed building.
      */
     informEligibleOpponentsAboutPlacedBuilding = (player: Player, building: Building) => {
-        let changedMapFileds = this.map.getMapFieldsOfBuilding(building);
+        let changedMapFields = building.occupiedFields;
         this.currentPlayers.forEach((checkedPlayer) => {
             if (checkedPlayer != player) {
                 let playersChangedFields: MapField[] = [];
-                for (const field of changedMapFileds) {
+                for (const field of changedMapFields) {
                     if (checkedPlayer.observedMapFields.includes(field))
                         playersChangedFields.push(field);
                 }
                 if (playersChangedFields.length > 0) { // is eligible
                     let opponent = checkedPlayer.getOpponentById(player.userId);
                     opponent.buildings.push(building);
-                    this.gameGateway.informAboutOpponentChangedBuildings(checkedPlayer, player, [building]);
+                    this.gameGateway.informAboutMapChanges(checkedPlayer, null, [building]);
                 }
             }
         });

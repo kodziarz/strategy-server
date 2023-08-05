@@ -9,6 +9,7 @@ import Player from './../../../strategy-common/dataClasses/Player';
 import { GameService } from './game.service';
 import { instantiateBuilding } from "./../../../strategy-common/classInstantiatingService";
 import Opponent from '../../../strategy-common/dataClasses/Opponent';
+import MapChangedMessage from "./../../../strategy-common/socketMessagesClasses/mapChangesMessage";
 
 @UseGuards(WsGuard)
 @WebSocketGateway({
@@ -47,18 +48,18 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   }
 
   /**
-   * Gets all available for the {@link Player} data about map.
+   * Gets all available for the {@link Player} data.
    * @param client Socket of connection.
    * @returns Data about map, to which {@link Player} has access to.
    */
-  @SubscribeMessage("map")
-  map(client: any) {
-    Logger.debug("Odebrano wydarzenie map.");
+  @SubscribeMessage("init")
+  init(client: any) {
+    Logger.debug("Odebrano wydarzenie init.");
     const player: Player = client.player;
     const game: Game = client.game;
     if (player != undefined)
       return {
-        event: "map",
+        event: "init",
         data: player.toJSON()
       };
     else throw new WsException("User has not joined any game");
@@ -81,6 +82,8 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
    */
   informThatOpponentJoined = (player: Player, opponent: Opponent) => {
     let socket = this.socketsOfPlayers.get(player.userId);
+    if (!player.opponents.includes(opponent))
+      throw new Error("Given opponent is not opponent of given player. Cannot send different player's opponent.");
     socket.emit("opponentJoined", opponent.getSimplified());
   };
 
@@ -90,36 +93,26 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     socket.emit("buildingPlaced", placedBuilding.getWithIdentifiers());
   }
 
-
   /**
-   * Handles {@link Game | Game's} event that observed map fields have changed.
-   * Sends them to the given player.
-   * @param player Player whoose observed map fields have changed.
+   * Sends changed {@link MapField}s and {@link Building}s to client.
+   * @param player Player is to notify about changes.
    * @param changedFields Map fields which have changed.
+   * @param changedBuildings Buildings which have changed.
    */
-  informAboutChangedMapFields = (player: Player, changedFields: MapField[]) => {
-    let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("mapFields", {
-      observedMapFields: changedFields.map((field) => { return field.getSimplified(); })
-    });
-  };
-
-  /**
-   * Sends changed {@link Building | Buildings} to the given player.
-   * @param informedPlayer Player who is eligible to know about change.
-   * @param buildingOwner Player who is the owner of the building.
-   * @param changedBuildings Buildings which have been changed.
-   */
-  informAboutOpponentChangedBuildings = (
-    informedPlayer: Player,
-    buildingOwner: Player,
-    changedBuildings: Building[]
+  informAboutMapChanges = (
+    player: Player,
+    changedFields: MapField[] | null,
+    changedBuildings: Building[] | null
   ) => {
-    Logger.debug("Informuję gracza, że przeciwnik ma budynek w jego polu widzenia.");
-    let socket = this.socketsOfPlayers.get(informedPlayer.userId);
-    socket.emit("opponentBuilding", {
-      opponentId: buildingOwner.userId,
-      changedBuildings: changedBuildings.map((building) => { return building.getWithIdentifiers(); })
-    });
+    let socket = this.socketsOfPlayers.get(player.userId);
+    let response: MapChangedMessage = {};
+
+    if (changedFields && changedFields.length > 0)
+      response.changedFields = changedFields.map((field) => { return field.getWithIdentifiers(); });
+
+    if (changedBuildings && changedBuildings.length > 0)
+      response.changedBuildings = changedBuildings.map((building) => { return building.getWithIdentifiers(); });
+
+    socket.emit("mapChanges", response);
   };
 }
