@@ -116,7 +116,8 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   informAboutMapChanges = (
     player: Player,
     changedFields: MapField[] | null,
-    changedBuildings: Building[] | null
+    changedBuildings: Building[] | null,
+    changedUnits: Unit[] | null
   ) => {
     let socket = this.socketsOfPlayers.get(player.userId);
     let response: MapChangesMessage = {};
@@ -126,6 +127,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
     if (changedBuildings && changedBuildings.length > 0)
       response.changedBuildings = changedBuildings.map((building) => { return building.getWithIdentifiers(); });
+
+    if (changedUnits && changedUnits.length > 0)
+      response.changedUnits = changedUnits.map((unit) => { return unit.getWithIdentifiers(); });
 
     socket.emit("mapChanges", response);
   };

@@ -3,6 +3,7 @@ import SETTINGS from "../SETTINGS";
 import Building from "./../../../../strategy-common/dataClasses/Building";
 import MapField from "./../../../../strategy-common/dataClasses/MapField";
 import Grassland from "./../../../../strategy-common/dataClasses/mapFields/Grassland";
+import Unit from "../../../../strategy-common/dataClasses/Unit";
 
 export default class Map {
     mapFields: MapField[][] = [];
@@ -49,6 +50,25 @@ export default class Map {
         if (!result.includes(field)) result.push(field);
 
         field = this.getMapFieldOfPosition(building.x + widthHalf, building.y + lengthHalf);
+        if (!result.includes(field)) result.push(field);
+
+        return result;
+    };
+
+    getMapFieldsOfUnit = (unit: Unit): MapField[] => {
+        const widthHalf = unit.width / 2;
+        const lengthHalf = unit.length / 2;
+
+        let result = [];
+        result.push(this.getMapFieldOfPosition(unit.x - widthHalf, unit.y + lengthHalf));
+
+        let field = this.getMapFieldOfPosition(unit.x - widthHalf, unit.y - lengthHalf);
+        if (!result.includes(field)) result.push(field);
+
+        field = this.getMapFieldOfPosition(unit.x + widthHalf, unit.y - lengthHalf);
+        if (!result.includes(field)) result.push(field);
+
+        field = this.getMapFieldOfPosition(unit.x + widthHalf, unit.y + lengthHalf);
         if (!result.includes(field)) result.push(field);
 
         return result;
