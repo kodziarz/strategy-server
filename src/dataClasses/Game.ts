@@ -71,8 +71,8 @@ export default class Game {
 
         //DEV
         let testUnit = new Builder(player.userId);
-        testUnit.x = mainBuildingField.centerX + 2 * mainBuilding.width;
-        testUnit.y = mainBuildingField.centerY + 2 * mainBuilding.length;
+        testUnit.x = mainBuildingField.centerX + 1.5 * mainBuilding.width;
+        testUnit.y = mainBuildingField.centerY + 1.5 * mainBuilding.length;
         let occupiedFields = this.map.getMapFieldsOfUnit(testUnit);
         if (!occupiedFields.includes(undefined)) {
             this.insertUnitToDataStructure(player, testUnit);
@@ -129,8 +129,20 @@ export default class Game {
         // add them to players' list
         player.observedMapFields.push(...newObservedFields);
 
+        //DEV buildings may already stay on visited MapField - then needs to be replaced
         let discoveredBuildings = this.getNewBuildingsFromNewObservedFields(newObservedFields);
+        //insert opponents' buildings to data structure
+        discoveredBuildings.forEach((discoveredBuilding) => {
+            let ownerOpponent = player.getOpponentById(discoveredBuilding.ownerId);
+            ownerOpponent.buildings.push(discoveredBuilding);
+        });
+
         let discoveredUnits = this.getNewUnitsFromNewObservedFields(newObservedFields);
+        //insert opponents' buildings to data structure
+        discoveredUnits.forEach((discoveredUnit) => {
+            let ownerOpponent = player.getOpponentById(discoveredUnit.ownerId);
+            ownerOpponent.units.push(discoveredUnit);
+        });
 
         this.gameGateway.informAboutMapChanges(player, newObservedFields, discoveredBuildings, discoveredUnits);
     };
@@ -144,7 +156,7 @@ export default class Game {
             ownerId: player.userId
         });
         this.insertUnitToDataStructure(player, unit);
-        player.units.push(unit);
+        // player.units.push(unit);
 
         // inform about building
         this.gameGateway.confirmUnitCreated(player, unit);
@@ -273,21 +285,30 @@ export default class Game {
     /**
      * Informs eligible opponents, that given player placed building.
      * @param player Player who placed bulding.
-     * @param building Placed building.
+     * @param building Placed building (already inserted into data structure).
      */
     informEligibleOpponentsAboutPlacedBuilding = (player: Player, building: Building) => {
-        let changedMapFields = building.occupiedFields;
-        this.currentPlayers.forEach((checkedPlayer) => {
-            if (checkedPlayer != player) {
-                let playersChangedFields: MapField[] = [];
-                for (const field of changedMapFields) {
-                    if (checkedPlayer.observedMapFields.includes(field))
-                        playersChangedFields.push(field);
-                }
-                if (playersChangedFields.length > 0) { // is eligible
-                    let opponent = checkedPlayer.getOpponentById(player.userId);
-                    opponent.buildings.push(building);
-                    this.gameGateway.informAboutMapChanges(checkedPlayer, null, [building], null);
+        // let changedMapFields = building.occupiedFields;
+        // this.currentPlayers.forEach((checkedPlayer) => {
+        //     if (checkedPlayer != player) {
+        //         let playersChangedFields: MapField[] = [];
+        //         for (const field of changedMapFields) {
+        //             if (checkedPlayer.observedMapFields.includes(field))
+        //                 playersChangedFields.push(field);
+        //         }
+        //         if (playersChangedFields.length > 0) { // is eligible
+        //             let opponent = checkedPlayer.getOpponentById(player.userId);
+        //             opponent.buildings.push(building);
+        //             this.gameGateway.informAboutMapChanges(checkedPlayer, null, [building], null);
+        //         }
+        //     }
+        // });
+        this.currentPlayers.forEach((updatedPlayer) => {
+            if (updatedPlayer != player) {
+                let opponent = updatedPlayer.getOpponentById(player.userId);
+                if (opponent.buildings.find((checkedBuilding) => { return checkedBuilding == building; })) {
+                    //if opponent should know about the building
+                    this.gameGateway.informAboutMapChanges(updatedPlayer, null, [building], null);
                 }
             }
         });
