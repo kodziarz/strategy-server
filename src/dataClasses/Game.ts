@@ -9,6 +9,7 @@ import { GameGateway } from "src/game/game.gateway";
 import { v4 as uuid } from "uuid";
 import MapField from "../../../strategy-common/dataClasses/MapField";
 import Unit from "../../../strategy-common/dataClasses/Unit";
+import Builder from "../../../strategy-common/dataClasses/units/Builder";
 
 /**Stores data about specific game. */
 export default class Game {
@@ -65,9 +66,18 @@ export default class Game {
             mainBuildingField.centerY,
             player.userId
         );
-        // player.buildings.push(mainBuilding);
         this.insertBuildingToDataStructure(player, mainBuilding);
         this.informEligibleOpponentsAboutPlacedBuilding(player, mainBuilding);
+
+        //DEV
+        let testUnit = new Builder(player.userId);
+        testUnit.x = mainBuildingField.centerX + 2 * mainBuilding.width;
+        testUnit.y = mainBuildingField.centerY + 2 * mainBuilding.length;
+        let occupiedFields = this.map.getMapFieldsOfUnit(testUnit);
+        if (!occupiedFields.includes(undefined)) {
+            this.insertUnitToDataStructure(player, testUnit);
+            this.informEligibleOpponentsAboutPlacedUnit(player, testUnit);
+        }
 
         //DEV dodawanie obserwowanych pól do listy
         player.observedMapFields.push(
