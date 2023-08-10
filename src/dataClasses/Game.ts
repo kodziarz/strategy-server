@@ -10,19 +10,22 @@ import { v4 as uuid } from "uuid";
 import MapField from "../../../strategy-common/dataClasses/MapField";
 import Unit from "../../../strategy-common/dataClasses/Unit";
 import Builder from "../../../strategy-common/dataClasses/units/Builder";
+import DataBinder from "./game/DataBinder";
 
 /**Stores data about specific game. */
 export default class Game {
 
     private map: Map;
+    private dataBinder: DataBinder;
+
     private currentPlayers: Player[] = [];
-    private buildings: Building[] = [];
     private _isWaiting = true;
 
     constructor(
         private readonly gameGateway: GameGateway
     ) {
-        this.map = new Map(10, 20);
+        this.dataBinder = new DataBinder(this.currentPlayers, this.map);
+        this.map = new Map(6, 5);
     }
 
     /**
@@ -47,18 +50,13 @@ export default class Game {
             this.getColumns(),
             this.getRows()
         );
-        this.currentPlayers.forEach((opponentPlayer) => {
-            // adds another player as opponent to the player
-            let alreadyExistingOpponentData = new Opponent(opponentPlayer.userId);
-            player.opponents.push(alreadyExistingOpponentData);
-
-            // add player as an opponent to other players
-            let addedPlayerOpponentData = new Opponent(player.userId);
-            opponentPlayer.opponents.push(addedPlayerOpponentData);
-            this.gameGateway.informThatOpponentJoined(opponentPlayer, addedPlayerOpponentData);
+        let opponentsOfOpponentPlayers = this.dataBinder.insertNewPlayer(player);
+        opponentsOfOpponentPlayers.forEach(({ opponentPlayer, opponentData }) => {
+            this.gameGateway.informThatOpponentJoined(
+                opponentPlayer,
+                opponentData
+            );
         });
-
-        this.currentPlayers.push(player);
 
         let mainBuildingField = this.map.getStartMapField();
         let mainBuilding = new MainBuilding(
@@ -66,7 +64,15 @@ export default class Game {
             mainBuildingField.centerY,
             player.userId
         );
-        this.insertBuildingToDataStructure(player, mainBuilding);
+
+        //DEV dodawanie obserwowanych pól do listy
+        let newObservedMapFields = this.map.getObservableMapFieldsFromPosition(
+            mainBuildingField.centerX,
+            mainBuildingField.centerY
+        );
+        player.observedMapFields.push(...newObservedMapFields);
+
+        this.dataBinder.insertBuilding(player, mainBuilding);
         this.informEligibleOpponentsAboutPlacedBuilding(player, mainBuilding);
 
         //DEV
@@ -75,34 +81,11 @@ export default class Game {
         testUnit.y = mainBuildingField.centerY + 1.5 * mainBuilding.length;
         let occupiedFields = this.map.getMapFieldsOfUnit(testUnit);
         if (!occupiedFields.includes(undefined)) {
-            this.insertUnitToDataStructure(player, testUnit);
+            this.dataBinder.insertUnit(player, testUnit);
             this.informEligibleOpponentsAboutPlacedUnit(player, testUnit);
         }
 
-        //DEV dodawanie obserwowanych pól do listy
-        player.observedMapFields.push(
-            ...this.map.getObservableMapFieldsFromPosition(
-                mainBuildingField.centerX,
-                mainBuildingField.centerY
-            ));
-
-        // adding oppontents' buildings and units to players' data about opponents.
-        this.currentPlayers.forEach((checkedPlayer) => {
-            if (checkedPlayer != player) {
-                checkedPlayer.buildings.forEach((checkedPlayersBuilding) => {
-                    checkedPlayersBuilding.occupiedFields.forEach((occupiedMapfield) => {
-                        if (player.observedMapFields.includes(occupiedMapfield))
-                            player.getOpponentById(checkedPlayer.userId).buildings.push(checkedPlayersBuilding);
-                    });
-                });
-                checkedPlayer.units.forEach((checkedPlayersUnit) => {
-                    checkedPlayersUnit.occupiedFields.forEach((occupiedMapfield) => {
-                        if (player.observedMapFields.includes(occupiedMapfield))
-                            player.getOpponentById(checkedPlayer.userId).units.push(checkedPlayersUnit);
-                    });
-                });
-            }
-        });
+        this.dataBinder.addOpponentsBuildingsAndUnitsToPlayer(player, newObservedMapFields);
     };
 
     addBuilding = (building: Building, player: Player) => {
@@ -113,7 +96,7 @@ export default class Game {
             id: uuid(),
             ownerId: player.userId
         });
-        this.insertBuildingToDataStructure(player, building);
+        this.dataBinder.insertBuilding(player, building);
 
         // inform about building
         this.gameGateway.confirmBuildingPlaced(player, building);
@@ -129,22 +112,12 @@ export default class Game {
         // add them to players' list
         player.observedMapFields.push(...newObservedFields);
 
-        //DEV buildings may already stay on visited MapField - then needs to be replaced
-        let discoveredBuildings = this.getNewBuildingsFromNewObservedFields(newObservedFields);
-        //insert opponents' buildings to data structure
-        discoveredBuildings.forEach((discoveredBuilding) => {
-            let ownerOpponent = player.getOpponentById(discoveredBuilding.ownerId);
-            ownerOpponent.buildings.push(discoveredBuilding);
-        });
+        let {
+            newObservedBuildings,
+            newObservedUnits
+        } = this.dataBinder.addOpponentsBuildingsAndUnitsToPlayer(player, newObservedFields);
 
-        let discoveredUnits = this.getNewUnitsFromNewObservedFields(newObservedFields);
-        //insert opponents' buildings to data structure
-        discoveredUnits.forEach((discoveredUnit) => {
-            let ownerOpponent = player.getOpponentById(discoveredUnit.ownerId);
-            ownerOpponent.units.push(discoveredUnit);
-        });
-
-        this.gameGateway.informAboutMapChanges(player, newObservedFields, discoveredBuildings, discoveredUnits);
+        this.gameGateway.informAboutMapChanges(player, newObservedFields, newObservedBuildings, newObservedUnits);
     };
 
     addUnit = (unit: Unit, player: Player) => {
@@ -155,7 +128,7 @@ export default class Game {
             id: uuid(),
             ownerId: player.userId
         });
-        this.insertUnitToDataStructure(player, unit);
+        this.dataBinder.insertUnit(player, unit);
         // player.units.push(unit);
 
         // inform about building
@@ -215,94 +188,11 @@ export default class Game {
     };
 
     /**
-     * Inserts building into all necessary data structures. Does not send this
-     * data to clients.
-     * Data is insterted into: player.buildings, fields in this.map, opponentPlayers.opponent.buildings
-     * @param player Owner of the placed building.
-     * @param building Placed building.
-     */
-    insertBuildingToDataStructure = (player: Player, building: Building) => {
-        player.buildings.push(building);
-
-        let changedMapFields = this.map.getMapFieldsOfBuilding(building);
-        changedMapFields.forEach((changedMapFiled) => {
-            changedMapFiled.buildings.push(building);
-        });
-
-        this.currentPlayers.forEach((updatedPlayer) => {
-            if (updatedPlayer != player) {
-                let isObserved = false;
-                for (let changedMapField of changedMapFields) {
-                    if (updatedPlayer.observedMapFields.includes(changedMapField)) {
-                        isObserved = true;
-                        break;
-                    }
-                }
-                if (isObserved) {
-                    let opponent = updatedPlayer.getOpponentById(player.userId);
-                    opponent.buildings.push(building);
-                }
-            }
-        });
-
-        building.occupiedFields.push(...changedMapFields);
-    };
-
-    /**
-     * Inserts {@link Unit} into all necessary data structures. Does not send this
-     * data to clients.
-     * Data is insterted into: player.units, fields in this.map, opponentPlayers.opponent.units
-     * @param player Owner of the placed unit.
-     * @param unit Placed unit.
-     */
-    insertUnitToDataStructure = (player: Player, unit: Unit) => {
-        player.units.push(unit);
-
-        let changedMapFields = this.map.getMapFieldsOfUnit(unit);
-        changedMapFields.forEach((changedMapFiled) => {
-            changedMapFiled.units.push(unit);
-        });
-
-        this.currentPlayers.forEach((updatedPlayer) => {
-            if (updatedPlayer != player) {
-                let isUnitObserved = false;
-                for (let changedMapField of changedMapFields) {
-                    if (updatedPlayer.observedMapFields.includes(changedMapField)) {
-                        isUnitObserved = true;
-                        break;
-                    }
-                }
-                if (isUnitObserved) {
-                    let opponent = updatedPlayer.getOpponentById(player.userId);
-                    opponent.units.push(unit);
-                }
-            }
-        });
-
-        unit.occupiedFields.push(...changedMapFields);
-    };
-
-    /**
      * Informs eligible opponents, that given player placed building.
      * @param player Player who placed bulding.
      * @param building Placed building (already inserted into data structure).
      */
     informEligibleOpponentsAboutPlacedBuilding = (player: Player, building: Building) => {
-        // let changedMapFields = building.occupiedFields;
-        // this.currentPlayers.forEach((checkedPlayer) => {
-        //     if (checkedPlayer != player) {
-        //         let playersChangedFields: MapField[] = [];
-        //         for (const field of changedMapFields) {
-        //             if (checkedPlayer.observedMapFields.includes(field))
-        //                 playersChangedFields.push(field);
-        //         }
-        //         if (playersChangedFields.length > 0) { // is eligible
-        //             let opponent = checkedPlayer.getOpponentById(player.userId);
-        //             opponent.buildings.push(building);
-        //             this.gameGateway.informAboutMapChanges(checkedPlayer, null, [building], null);
-        //         }
-        //     }
-        // });
         this.currentPlayers.forEach((updatedPlayer) => {
             if (updatedPlayer != player) {
                 let opponent = updatedPlayer.getOpponentById(player.userId);
@@ -317,21 +207,15 @@ export default class Game {
     /**
      * Informs eligible opponents, that given player placed unit.
      * @param player Player who placed unit.
-     * @param unit Placed unit.
+     * @param unit Placed unit (already inserted into data structure).
      */
     informEligibleOpponentsAboutPlacedUnit = (player: Player, unit: Unit) => {
-        let changedMapFields = unit.occupiedFields;
-        this.currentPlayers.forEach((checkedPlayer) => {
-            if (checkedPlayer != player) {
-                let playersChangedFields: MapField[] = [];
-                for (const field of changedMapFields) {
-                    if (checkedPlayer.observedMapFields.includes(field))
-                        playersChangedFields.push(field);
-                }
-                if (playersChangedFields.length > 0) { // is eligible
-                    let opponent = checkedPlayer.getOpponentById(player.userId);
-                    opponent.units.push(unit);
-                    this.gameGateway.informAboutMapChanges(checkedPlayer, null, null, [unit]);
+        this.currentPlayers.forEach((updatedPlayer) => {
+            if (updatedPlayer != player) {
+                let opponent = updatedPlayer.getOpponentById(player.userId);
+                if (opponent.units.find((checkedUnit) => { return checkedUnit == unit; })) {
+                    //if opponent should know about the unit
+                    this.gameGateway.informAboutMapChanges(updatedPlayer, null, null, [unit]);
                 }
             }
         });
