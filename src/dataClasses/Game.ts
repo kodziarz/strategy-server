@@ -2,7 +2,6 @@ import { Logger } from "@nestjs/common";
 import Building from "./../../../strategy-common/dataClasses/Building";
 import MainBuilding from "./../../../strategy-common/dataClasses/buildings/MainBuilding";
 import Map from "./game/Map";
-import Opponent from "./../../../strategy-common/dataClasses/Opponent";
 import Player from "../../../strategy-common/dataClasses/Player";
 import User from "./User";
 import { GameGateway } from "src/game/game.gateway";
@@ -11,21 +10,32 @@ import MapField from "../../../strategy-common/dataClasses/MapField";
 import Unit from "../../../strategy-common/dataClasses/Unit";
 import Builder from "../../../strategy-common/dataClasses/units/Builder";
 import DataBinder from "./game/DataBinder";
+import Point2d from "../../../strategy-common/geometryClasses/Point2d";
+import UnitPathVerifier, { KnowinglyIllegalPathException } from "./game/UnitPathVerifier";
+import Path from "./game/Path";
+import TimeManager from "./game/TimeManager";
+import UnitMover from "./game/UnitMover";
 
 /**Stores data about specific game. */
 export default class Game {
 
+    private timeManager: TimeManager;
     private map: Map;
     private dataBinder: DataBinder;
+    private unitPathVerifier: UnitPathVerifier;
+    private unitMover: UnitMover;
 
     private currentPlayers: Player[] = [];
     private _isWaiting = true;
 
     constructor(
-        private readonly gameGateway: GameGateway
+        private readonly gameGateway: GameGateway,
     ) {
-        this.dataBinder = new DataBinder(this.currentPlayers, this.map);
+        this.timeManager = new TimeManager();
         this.map = new Map(6, 5);
+        this.dataBinder = new DataBinder(this.currentPlayers, this.map);
+        this.unitPathVerifier = new UnitPathVerifier(this.map);
+        this.unitMover = new UnitMover(this.timeManager);
     }
 
     /**
@@ -150,6 +160,38 @@ export default class Game {
         this.gameGateway.informAboutMapChanges(player, newObservedFields, discoveredBuildings, discoveredUnits);
     };
 
+    //throws KnowinglyIllegalPathException
+    moveUnit = (
+        player: Player,
+        unit: Unit,
+        pathPoints: Point2d[]
+    ) => {
+        let path = new Path();
+        path.start = new Point2d(unit.x, unit.y);
+        for (let i = 0; i < pathPoints.length - 1; i++) {
+            let {
+                mapFields,
+                intersections,
+                wasPathSliced
+            } = this.unitPathVerifier.getLegalMapFieldsAndIntersectionsForLine(
+                player,
+                pathPoints[i],
+                pathPoints[i + 1],
+                unit
+            );
+            path.mapFields.push(...mapFields);
+
+            if (wasPathSliced) {
+                path.addIntersections(intersections.slice(0, -1));
+                path.end = intersections[intersections.length - 1];
+                this.unitMover.setMovement(unit, path);
+                break;
+            } else {
+                path.addIntersections(intersections);
+            }
+        }
+    };
+
     getNewObservedMapFieldsFromPosition = (x: number, y: number, player: Player) => {
         let observedFields = this.map.getObservableMapFieldsFromPosition(x, y);
         let newObservedFields: MapField[] = [];
@@ -237,7 +279,7 @@ export default class Game {
     };
 
     getMapFields = () => {
-        return this.map.mapFields;
+        return this.map.fields;
     };
 
 

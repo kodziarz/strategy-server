@@ -6,7 +6,7 @@ import Grassland from "./../../../../strategy-common/dataClasses/mapFields/Grass
 import Unit from "../../../../strategy-common/dataClasses/Unit";
 
 export default class Map {
-    mapFields: MapField[][] = [];
+    fields: MapField[][] = [];
 
     constructor(
         readonly columns: number,
@@ -17,9 +17,9 @@ export default class Map {
 
     private generateMap = (): void => {
         for (let x = 0; x < this.columns; x++) {
-            this.mapFields.push([]);
+            this.fields.push([]);
             for (let y = 0; y < this.rows; y++) {
-                this.mapFields[x].push(new Grassland(x, y));
+                this.fields[x].push(new Grassland(x, y));
             }
         }
     };
@@ -27,13 +27,13 @@ export default class Map {
     getStartMapField = (): MapField => {
         const x = Math.floor(Math.random() * this.columns);
         const y = Math.floor(Math.random() * this.rows);
-        return this.mapFields[x][y];
+        return this.fields[x][y];
     };
 
     getMapFieldOfPosition = (x: number, y: number): MapField => {
         const column = Math.floor(x / SETTINGS.mapFieldSide);
         const row = Math.floor(y / SETTINGS.mapFieldSide);
-        return this.mapFields[column][row];
+        return this.fields[column][row];
     };
 
     getMapFieldsOfBuilding = (building: Building): MapField[] => {
@@ -86,7 +86,7 @@ export default class Map {
 
         for (let x = minX; x <= maxX; x++) {
             for (let y = minY; y <= maxY; y++) {
-                result.push(this.mapFields[x][y]);
+                result.push(this.fields[x][y]);
             }
         }
         return result;

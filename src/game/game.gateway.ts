@@ -7,11 +7,12 @@ import Building from './../../../strategy-common/dataClasses/Building';
 import MapField from './../../../strategy-common/dataClasses/MapField';
 import Player from './../../../strategy-common/dataClasses/Player';
 import { GameService } from './game.service';
-import { instantiateBuilding, instantiateUnit } from "./../../../strategy-common/classInstantiatingService";
+import { findUnit, instantiateBuilding, instantiatePoint, instantiateUnit } from "./../../../strategy-common/classInstantiatingService";
 import Opponent from '../../../strategy-common/dataClasses/Opponent';
 import MapChangesMessage from "./../../../strategy-common/socketioMessagesClasses/MapChangesMessage";
 import BuildingWithIdentifiers from '../../../strategy-common/socketioMessagesClasses/BuildingWithIdentifiers';
 import Unit from '../../../strategy-common/dataClasses/Unit';
+import MoveUnitMessage from "./../../../strategy-common/socketioMessagesClasses/MoveUnitMessage";
 
 @UseGuards(WsGuard)
 @WebSocketGateway({
@@ -81,6 +82,17 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     const game: Game = client.game;
     let unit = instantiateUnit(data);
     game.addUnit(unit, client.player);
+  }
+
+  @SubscribeMessage("moveUnit")
+  moveUnit(client: any, data: MoveUnitMessage) {
+    Logger.debug("odebrano wydarzenie moveUnit.");
+    if (data.pathPoints.length < 2)
+      throw new Error("Request contains less than 2 path points, which is too little for valid path.");
+    const game: Game = client.game;
+    const player: Player = client.player;
+    let unit = findUnit(data.unit, player.units);
+    game.moveUnit(player, unit, data.pathPoints.map((pointData) => { return instantiatePoint(pointData); }));
   }
 
   /**
