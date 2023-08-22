@@ -178,7 +178,7 @@ export default class Game {
 
                 let {
                     mapFields,
-                    intersections,
+                    crossings: intersections,
                     wasPathSliced
                 } = this.unitPathVerifier.getLegalMapFieldsAndIntersectionsForLine(
                     player,
