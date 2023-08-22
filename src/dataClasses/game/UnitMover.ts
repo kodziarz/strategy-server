@@ -3,7 +3,6 @@ import Unit from "../../../../strategy-common/dataClasses/Unit";
 import Vector2d from "../../../../strategy-common/geometryClasses/Vector2d";
 import Path from "./Path";
 import TimeManager from "./TimeManager";
-import { start } from "repl";
 import Point2d from "../../../../strategy-common/geometryClasses/Point2d";
 
 /**
@@ -18,7 +17,7 @@ export default class UnitMover {
     }
 
     move = (intervenedTime: number, deltaTime: number, currentUnixTime: number): void => {
-        for (const movement of this.movements) {
+        this.movements.forEach((movement, movementIndex) => {
             let lastPoint = movement.path.points[movement.lastPointIndex];
             let nextPoint = movement.path.points[movement.lastPointIndex + 1];
 
@@ -42,7 +41,6 @@ export default class UnitMover {
                     movement.distanceFromLastIntersection
                 );
                 Logger.debug("Jendostka kontynuuje podróż:");
-                Logger.debug(movement.unit);
                 //TODO move unit, inform user about moving his unit and so on.
             } else {
                 // if next point is crossed
@@ -51,6 +49,10 @@ export default class UnitMover {
                 do {
                     movement.lastPointIndex++;
                     movement.lastMapFieldIndex++;
+                    if (movement.lastPointIndex == movement.path.points.length - 1) {
+                        this.finishUnitsJourney(movementIndex);
+                        return;
+                    }
 
                     lastPoint = nextPoint;
                     nextPoint = movement.path.points[movement.lastPointIndex + 1];
@@ -67,9 +69,8 @@ export default class UnitMover {
 
                     if (remainingTime > 0) {
                         if (movement.lastPointIndex == movement.path.points.length - 2) {
-                            //reached the end of the path -> finish journey.
-                            //TODO finish journey of unit
-                            Logger.debug("Jendostka dotarła do szczęśliwego końca");
+                            this.finishUnitsJourney(movementIndex);
+                            return;
                         }
                         // else continue executing loop
                     } else {
@@ -83,13 +84,20 @@ export default class UnitMover {
                             movement.distanceFromLastIntersection
                         );
                         Logger.debug("Jendostka kontynuuje podróż:");
-                        Logger.debug(movement.unit);
                         //TODO inform user about moving his unit and so on.
                     }
 
                 } while (remainingTime > 0);
             }
-        }
+        });
+    };
+
+    finishUnitsJourney = (movementIndex: number) => {
+        //reached the end of the path -> finish journey.
+        //TODO finish journey of unit, inform user about it and so on
+        Logger.debug("Jendostka dotarła do szczęśliwego końca");
+        this.movements.splice(movementIndex, 1);
+
     };
 
     private setUnitPositionByDistanceBetweenPoints = (
@@ -105,16 +113,18 @@ export default class UnitMover {
     };
 
     setMovement = (unit: Unit, path: Path) => {
+        let start = Date.now();
         this.movements.push(
             {
                 unit,
                 path,
-                start: Date.now(),
+                start: start,
                 lastPointIndex: 0,
                 lastMapFieldIndex: 0,
                 distanceFromLastIntersection: 0
             }
         );
+        return start;
     };
 }
 

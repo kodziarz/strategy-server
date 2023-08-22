@@ -166,29 +166,45 @@ export default class Game {
         unit: Unit,
         pathPoints: Point2d[]
     ) => {
-        let path = new Path();
-        path.start = new Point2d(unit.x, unit.y);
-        for (let i = 0; i < pathPoints.length - 1; i++) {
-            let {
-                mapFields,
-                intersections,
-                wasPathSliced
-            } = this.unitPathVerifier.getLegalMapFieldsAndIntersectionsForLine(
-                player,
-                pathPoints[i],
-                pathPoints[i + 1],
-                unit
-            );
-            path.mapFields.push(...mapFields);
+        try {
+            let startPoint = new Point2d(unit.x, unit.y);
+            pathPoints.unshift(startPoint);
+            let path = new Path();
+            path.points.push(startPoint);
 
-            if (wasPathSliced) {
-                path.addIntersections(intersections.slice(0, -1));
-                path.end = intersections[intersections.length - 1];
-                this.unitMover.setMovement(unit, path);
-                break;
-            } else {
-                path.addIntersections(intersections);
+            for (let i = 0; i < pathPoints.length - 1; i++) {
+                let lineStart = pathPoints[i];
+                let lineEnd = pathPoints[i + 1];
+
+                let {
+                    mapFields,
+                    intersections,
+                    wasPathSliced
+                } = this.unitPathVerifier.getLegalMapFieldsAndIntersectionsForLine(
+                    player,
+                    lineStart,
+                    lineEnd,
+                    unit
+                );
+                path.mapFields.push(...mapFields);
+                path.points.push(...intersections);
+
+                if (wasPathSliced) {
+                    // if path is sliced, it ends with an intersection, so the end does not need to be added.
+                    this.unitMover.setMovement(unit, path);
+                    this.gameGateway.confirmUnitMove(player, unit);
+                    return;
+                } else {
+                    // end of processed line is not an intersection, so it needs to be added
+                    path.points.push(lineEnd);
+                }
             }
+            let start = this.unitMover.setMovement(unit, path);
+            this.gameGateway.confirmUnitMove(player, unit);
+        } catch (ex: any) {
+            if (ex instanceof KnowinglyIllegalPathException) {
+                this.gameGateway.rejectUnitMove(player, unit);
+            } else throw ex;
         }
     };
 

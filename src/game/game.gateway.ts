@@ -13,6 +13,7 @@ import MapChangesMessage from "./../../../strategy-common/socketioMessagesClasse
 import BuildingWithIdentifiers from '../../../strategy-common/socketioMessagesClasses/BuildingWithIdentifiers';
 import Unit from '../../../strategy-common/dataClasses/Unit';
 import MoveUnitMessage from "./../../../strategy-common/socketioMessagesClasses/MoveUnitMessage";
+import UnitMoveResponse from "./../../../strategy-common/socketioMessagesClasses/UnitMoveResponse";
 
 @UseGuards(WsGuard)
 @WebSocketGateway({
@@ -87,12 +88,13 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("moveUnit")
   moveUnit(client: any, data: MoveUnitMessage) {
     Logger.debug("odebrano wydarzenie moveUnit.");
-    if (data.pathPoints.length < 2)
-      throw new Error("Request contains less than 2 path points, which is too little for valid path.");
+    if (data.pathPoints.length == 0)
+      throw new Error("Request contains empty pathPoints list.");
     const game: Game = client.game;
     const player: Player = client.player;
     let unit = findUnit(data.unit, player.units);
-    game.moveUnit(player, unit, data.pathPoints.map((pointData) => { return instantiatePoint(pointData); }));
+    let instantiatedPathPoints = data.pathPoints.map((pointData) => { return instantiatePoint(pointData); });
+    game.moveUnit(player, unit, instantiatedPathPoints);
   }
 
   /**
@@ -117,6 +119,18 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     Logger.debug("Potwierdzam utworzenie jednostki.");
     let socket = this.socketsOfPlayers.get(player.userId);
     socket.emit("unitCreated", createdUnit);
+  }
+
+  confirmUnitMove(player: Player, unit: Unit) {
+    Logger.debug("Zatwierdzam ruch jednostki.");
+    let socket = this.socketsOfPlayers.get(player.userId);
+    socket.emit("confirmUnitMove", { unit: unit.getIdentifier() } as UnitMoveResponse);
+  }
+
+  rejectUnitMove(player: Player, unit: Unit) {
+    Logger.debug("Odrzucam ruch jednostki.");
+    let socket = this.socketsOfPlayers.get(player.userId);
+    socket.emit("rejectUnitMove", { unit: unit.getIdentifier() } as UnitMoveResponse);
   }
 
   /**

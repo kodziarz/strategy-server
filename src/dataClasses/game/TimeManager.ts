@@ -1,20 +1,23 @@
-import { Logger } from "@nestjs/common";
-
 /**
  * Manages time i.e. invokes all methods which last in time or need to be invoked continually.
  */
 export default class TimeManager {
 
-    public static INTERVAL = 5000;
+    public static INTERVAL = 1; // [s]
     private interval: NodeJS.Timer;
     private functionsToInvoke: TimeDependentFunction[] = [];
+    readonly gameStartTime: number;
 
     constructor() {
-        this.interval = setInterval(this.invokeMethods, TimeManager.INTERVAL);
+        this.gameStartTime = Date.now();
+        this.interval = setInterval(this.invokeMethods, TimeManager.INTERVAL * 1000);
     }
 
     invokeMethods = () => {
-        Logger.debug("Invocation of subscribed functions needs to be implemented.");
+        let now = Date.now();
+        this.functionsToInvoke.forEach((f) => {
+            f((now - this.gameStartTime) / 1000, TimeManager.INTERVAL, now);
+        });
     };
 
     subscribe = (invokedFunction: TimeDependentFunction) => {
@@ -32,4 +35,4 @@ export default class TimeManager {
 
 }
 
-type TimeDependentFunction = (intervenedTime: number, deltaTime: number, currentUnixTime: number) => void;
+type TimeDependentFunction = (elapsedTime: number, deltaTime: number, currentUnixTime: number) => void;

@@ -147,8 +147,9 @@ export default class UnitPathVerifier {
         isAscending: boolean,
         firstMapField: MapField
     ) => {
-        let verticalIndex = 0;
-        let horizontalIndex = 0;
+        //DEV current solution of empty intersections table problem is probably nonoptimal
+        let verticalIndex = verticalIntersections.length == 0 ? -1 : 0;
+        let horizontalIndex = horizontalIntersections.length == 0 ? -1 : 0;
         let mapFieldsToReturn: MapField[] = [firstMapField];
         let intersectionsToReturn: Point2d[] = [];
 
@@ -160,8 +161,9 @@ export default class UnitPathVerifier {
         else shift = -1;
 
         for (let i = 0; i < lengthsSum; i++) {
-            const vertPoint = verticalIntersections[verticalIndex];
-            const horizPoint = horizontalIntersections[horizontalIndex];
+            //the trick with infity guarantees that point from enpty array will never be chosen
+            const vertPoint = verticalIndex < 0 ? new Point2d(Infinity, 0) : verticalIntersections[verticalIndex];
+            const horizPoint = horizontalIndex < 0 ? new Point2d(Infinity, 0) : horizontalIntersections[horizontalIndex];
             if (vertPoint.x < horizPoint.x) {
                 verticalIndex++;
                 let nextField = this.map.fields[lastField.column + shift][lastField.row];
