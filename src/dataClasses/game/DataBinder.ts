@@ -3,6 +3,7 @@ import MapField from "../../../../strategy-common/dataClasses/MapField";
 import Opponent from "../../../../strategy-common/dataClasses/Opponent";
 import Player from "../../../../strategy-common/dataClasses/Player";
 import Unit from "../../../../strategy-common/dataClasses/Unit";
+import { getMapFieldsOfBuilding, getMapFieldsOfUnit } from "../../../../strategy-common/mapService";
 import Map from "./Map";
 
 /**
@@ -127,7 +128,7 @@ export default class DataBinder {
     insertBuilding = (player: Player, building: Building) => {
         player.buildings.push(building);
 
-        let changedMapFields = this.map.getMapFieldsOfBuilding(building);
+        let changedMapFields = getMapFieldsOfBuilding(building, this.map.fields);
         changedMapFields.forEach((changedMapFiled) => {
             changedMapFiled.buildings.push(building);
         });
@@ -161,7 +162,7 @@ export default class DataBinder {
     insertUnit = (player: Player, unit: Unit) => {
         player.units.push(unit);
 
-        let changedMapFields = this.map.getMapFieldsOfUnit(unit);
+        let changedMapFields = getMapFieldsOfUnit(unit, this.map.fields);
         changedMapFields.forEach((changedMapFiled) => {
             changedMapFiled.units.push(unit);
         });

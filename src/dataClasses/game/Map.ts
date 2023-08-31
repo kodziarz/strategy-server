@@ -4,6 +4,7 @@ import Building from "./../../../../strategy-common/dataClasses/Building";
 import MapField from "./../../../../strategy-common/dataClasses/MapField";
 import Grassland from "./../../../../strategy-common/dataClasses/mapFields/Grassland";
 import Unit from "../../../../strategy-common/dataClasses/Unit";
+import { getMapFieldOfPoint } from "../../../../strategy-common/mapService";
 
 export default class Map {
     fields: MapField[][] = [];
@@ -30,53 +31,53 @@ export default class Map {
         return this.fields[x][y];
     };
 
-    getMapFieldOfPosition = (x: number, y: number): MapField => {
-        const column = Math.floor(x / SETTINGS.mapFieldSide);
-        const row = Math.floor(y / SETTINGS.mapFieldSide);
-        return this.fields[column][row];
-    };
+    // getMapFieldOfPosition = (x: number, y: number): MapField => {
+    //     const column = Math.floor(x / SETTINGS.mapFieldSide);
+    //     const row = Math.floor(y / SETTINGS.mapFieldSide);
+    //     return this.fields[column][row];
+    // };
 
-    getMapFieldsOfBuilding = (building: Building): MapField[] => {
-        const widthHalf = building.width / 2;
-        const lengthHalf = building.length / 2;
+    // getMapFieldsOfBuilding = (building: Building): MapField[] => {
+    //     const widthHalf = building.width / 2;
+    //     const lengthHalf = building.length / 2;
 
-        let result = [];
-        result.push(this.getMapFieldOfPosition(building.x - widthHalf, building.y + lengthHalf));
+    //     let result = [];
+    //     result.push(getMapFieldOfPosition(building.x - widthHalf, building.y + lengthHalf, this.fields));
 
-        let field = this.getMapFieldOfPosition(building.x - widthHalf, building.y - lengthHalf);
-        if (!result.includes(field)) result.push(field);
+    //     let field = getMapFieldOfPosition(building.x - widthHalf, building.y - lengthHalf, this.fields);
+    //     if (!result.includes(field)) result.push(field);
 
-        field = this.getMapFieldOfPosition(building.x + widthHalf, building.y - lengthHalf);
-        if (!result.includes(field)) result.push(field);
+    //     field = getMapFieldOfPosition(building.x + widthHalf, building.y - lengthHalf, this.fields);
+    //     if (!result.includes(field)) result.push(field);
 
-        field = this.getMapFieldOfPosition(building.x + widthHalf, building.y + lengthHalf);
-        if (!result.includes(field)) result.push(field);
+    //     field = getMapFieldOfPosition(building.x + widthHalf, building.y + lengthHalf, this.fields);
+    //     if (!result.includes(field)) result.push(field);
 
-        return result;
-    };
+    //     return result;
+    // };
 
-    getMapFieldsOfUnit = (unit: Unit): MapField[] => {
-        const widthHalf = unit.width / 2;
-        const lengthHalf = unit.length / 2;
+    // getMapFieldsOfUnit = (unit: Unit): MapField[] => {
+    //     const widthHalf = unit.width / 2;
+    //     const lengthHalf = unit.length / 2;
 
-        let result = [];
-        result.push(this.getMapFieldOfPosition(unit.x - widthHalf, unit.y + lengthHalf));
+    //     let result = [];
+    //     result.push(getMapFieldOfPosition(unit.x - widthHalf, unit.y + lengthHalf, this.fields));
 
-        let field = this.getMapFieldOfPosition(unit.x - widthHalf, unit.y - lengthHalf);
-        if (!result.includes(field)) result.push(field);
+    //     let field = getMapFieldOfPosition(unit.x - widthHalf, unit.y - lengthHalf, this.fields);
+    //     if (!result.includes(field)) result.push(field);
 
-        field = this.getMapFieldOfPosition(unit.x + widthHalf, unit.y - lengthHalf);
-        if (!result.includes(field)) result.push(field);
+    //     field = getMapFieldOfPosition(unit.x + widthHalf, unit.y - lengthHalf, this.fields);
+    //     if (!result.includes(field)) result.push(field);
 
-        field = this.getMapFieldOfPosition(unit.x + widthHalf, unit.y + lengthHalf);
-        if (!result.includes(field)) result.push(field);
+    //     field = getMapFieldOfPosition(unit.x + widthHalf, unit.y + lengthHalf, this.fields);
+    //     if (!result.includes(field)) result.push(field);
 
-        return result;
-    };
+    //     return result;
+    // };
 
     //DEV
     getObservableMapFieldsFromPosition = (x: number, y: number): MapField[] => {
-        const field = this.getMapFieldOfPosition(x, y);
+        const field = getMapFieldOfPoint(x, y, this.fields);
         const result = [];
 
         const minX = field.column - 5 >= 0 ? field.column - 5 : 0;

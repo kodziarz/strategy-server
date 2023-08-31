@@ -14,6 +14,7 @@ import BuildingWithIdentifiers from '../../../strategy-common/socketioMessagesCl
 import Unit from '../../../strategy-common/dataClasses/Unit';
 import MoveUnitMessage from "./../../../strategy-common/socketioMessagesClasses/MoveUnitMessage";
 import UnitMoveResponse from "./../../../strategy-common/socketioMessagesClasses/UnitMoveResponse";
+import ReportUnitMoveMessage from "./../../../strategy-common/socketioMessagesClasses/ReportUnitMoveMessage";
 
 @UseGuards(WsGuard)
 @WebSocketGateway({
@@ -94,7 +95,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     const player: Player = client.player;
     let unit = findUnit(data.unit, player.units);
     let instantiatedPathPoints = data.pathPoints.map((pointData) => { return instantiatePoint(pointData); });
-    game.moveUnit(player, unit, instantiatedPathPoints);
+    game.moveUnit(data.id, player, unit, instantiatedPathPoints);
   }
 
   /**
@@ -121,16 +122,22 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     socket.emit("unitCreated", createdUnit);
   }
 
-  confirmUnitMove(player: Player, unit: Unit) {
+  confirmUnitMove(player: Player, movementId: string) {
     Logger.debug("Zatwierdzam ruch jednostki.");
     let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("confirmUnitMove", { unit: unit.getIdentifier() } as UnitMoveResponse);
+    socket.emit("confirmUnitMove", { id: movementId } as UnitMoveResponse);
   }
 
-  rejectUnitMove(player: Player, unit: Unit) {
+  rejectUnitMove(player: Player, movementId: string) {
     Logger.debug("Odrzucam ruch jednostki.");
     let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("rejectUnitMove", { unit: unit.getIdentifier() } as UnitMoveResponse);
+    socket.emit("rejectUnitMove", { id: movementId } as UnitMoveResponse);
+  }
+
+  reportUnitMove(player: Player, movementReport: ReportUnitMoveMessage) {
+    Logger.debug("Raportuję obecne położenie jednostki.");
+    let socket = this.socketsOfPlayers.get(player.userId);
+    socket.emit("reportUnitMove", movementReport);
   }
 
   /**

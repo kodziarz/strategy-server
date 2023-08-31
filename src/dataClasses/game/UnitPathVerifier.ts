@@ -3,7 +3,8 @@ import Player from "../../../../strategy-common/dataClasses/Player";
 import Unit from "../../../../strategy-common/dataClasses/Unit";
 import Point2d from "./../../../../strategy-common/geometryClasses/Point2d";
 import Map from "./Map";
-import { getCrossedMapFieldsForLine } from "./../../../../strategy-common/mapService";
+import { getCrossedMapFieldsForLine, getMapFieldOfPoint } from "./../../../../strategy-common/mapService";
+import { Logger } from "@nestjs/common";
 export default class UnitPathVerifier {
 
     private map: Map;
@@ -27,7 +28,7 @@ export default class UnitPathVerifier {
      * observed {@link MapFields}, then lists are cut. The {@link MapField}s
      * array ends with field previous to the non-crossable and crossings array
      * ands with the crossing to the non-crossable {@link MapField}.
-     * @throws {@link KnowinglyIllegalPathException} if observed by player
+     * @throws The {@link KnowinglyIllegalPathException} if observed by player
      * {@link MapField}, on which the {@link unit} has velocity 0 (cannot cross
      * it), is found on the way of the line.
      */
@@ -37,8 +38,10 @@ export default class UnitPathVerifier {
         endPoint: Point2d,
         unit: Unit
     ): { mapFields: MapField[]; crossings: Point2d[]; wasPathSliced: boolean; } => {
-        // let { mapFields, intersections } = this.getCrossedMapFieldsForLine(startPoint, endPoint);
-        let { mapFields, crossings } = getCrossedMapFieldsForLine(startPoint, endPoint, this.map.fields);
+        let { mapPositions, crossings } = getCrossedMapFieldsForLine(startPoint, endPoint);
+        Logger.debug("mapPositions[0]: ");
+        Logger.debug(mapPositions);
+        let mapFields = mapPositions.map((position) => { return this.map.fields[position.column][position.row]; });
 
         for (let i = 0; i < mapFields.length; i++) {
             let mapField = mapFields[i];
@@ -63,16 +66,6 @@ export default class UnitPathVerifier {
             wasPathSliced: false
         };
     };
-
-
-
-    // isSmaller(a: number, b: number) {
-    //     return a < b;
-    // }
-
-    // isBigger(a: number, b: number) {
-    //     return a > b;
-    // }
 }
 
 export class KnowinglyIllegalPathException extends Error {

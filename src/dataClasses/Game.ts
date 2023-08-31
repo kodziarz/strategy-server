@@ -12,9 +12,10 @@ import Builder from "../../../strategy-common/dataClasses/units/Builder";
 import DataBinder from "./game/DataBinder";
 import Point2d from "../../../strategy-common/geometryClasses/Point2d";
 import UnitPathVerifier, { KnowinglyIllegalPathException } from "./game/UnitPathVerifier";
-import Path from "./game/Path";
 import TimeManager from "./game/TimeManager";
 import UnitMover from "./game/UnitMover";
+import Path from "../../../strategy-common/geometryClasses/Path";
+import { getMapFieldsOfUnit } from "../../../strategy-common/mapService";
 
 /**Stores data about specific game. */
 export default class Game {
@@ -35,7 +36,7 @@ export default class Game {
         this.map = new Map(6, 5);
         this.dataBinder = new DataBinder(this.currentPlayers, this.map);
         this.unitPathVerifier = new UnitPathVerifier(this.map);
-        this.unitMover = new UnitMover(this.timeManager);
+        this.unitMover = new UnitMover(this, gameGateway, this.timeManager, this.map.fields);
     }
 
     /**
@@ -89,7 +90,7 @@ export default class Game {
         let testUnit = new Builder(player.userId);
         testUnit.x = mainBuildingField.centerX + 1.5 * mainBuilding.width;
         testUnit.y = mainBuildingField.centerY + 1.5 * mainBuilding.length;
-        let occupiedFields = this.map.getMapFieldsOfUnit(testUnit);
+        let occupiedFields = getMapFieldsOfUnit(testUnit, this.map.fields);
         if (!occupiedFields.includes(undefined)) {
             this.dataBinder.insertUnit(player, testUnit);
             this.informEligibleOpponentsAboutPlacedUnit(player, testUnit);
@@ -162,6 +163,7 @@ export default class Game {
 
     //throws KnowinglyIllegalPathException
     moveUnit = (
+        movementId: string,
         player: Player,
         unit: Unit,
         pathPoints: Point2d[]
@@ -170,7 +172,6 @@ export default class Game {
             let startPoint = new Point2d(unit.x, unit.y);
             pathPoints.unshift(startPoint);
             let path = new Path();
-            path.points.push(startPoint);
 
             for (let i = 0; i < pathPoints.length - 1; i++) {
                 let lineStart = pathPoints[i];
@@ -178,7 +179,7 @@ export default class Game {
 
                 let {
                     mapFields,
-                    crossings: intersections,
+                    crossings,
                     wasPathSliced
                 } = this.unitPathVerifier.getLegalMapFieldsAndIntersectionsForLine(
                     player,
@@ -187,23 +188,25 @@ export default class Game {
                     unit
                 );
                 path.mapFields.push(...mapFields);
-                path.points.push(...intersections);
+                path.points.push(...crossings);
 
                 if (wasPathSliced) {
                     // if path is sliced, it ends with an intersection, so the end does not need to be added.
-                    this.unitMover.setMovement(unit, path);
-                    this.gameGateway.confirmUnitMove(player, unit);
+                    let movement = this.unitMover.setMovement(movementId, unit, path);
+                    this.gameGateway.confirmUnitMove(player, movement.id);
                     return;
                 } else {
                     // end of processed line is not an intersection, so it needs to be added
                     path.points.push(lineEnd);
                 }
             }
-            let start = this.unitMover.setMovement(unit, path);
-            this.gameGateway.confirmUnitMove(player, unit);
+            let movement = this.unitMover.setMovement(movementId, unit, path);
+            console.log("Ustawiam ruch według danych: ", movement);
+
+            this.gameGateway.confirmUnitMove(player, movement.id);
         } catch (ex: any) {
             if (ex instanceof KnowinglyIllegalPathException) {
-                this.gameGateway.rejectUnitMove(player, unit);
+                this.gameGateway.rejectUnitMove(player, movementId);
             } else throw ex;
         }
     };
