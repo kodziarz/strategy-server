@@ -16,12 +16,14 @@ import TimeManager from "./game/TimeManager";
 import UnitMover from "./game/UnitMover";
 import Path from "../../../strategy-common/geometryClasses/Path";
 import { getMapFieldsOfUnit } from "../../../strategy-common/mapService";
+import VisibilityManager from "./game/VisibilityManager";
 
 /**Stores data about specific game. */
 export default class Game {
 
     private timeManager: TimeManager;
     private map: Map;
+    private visibilityManager: VisibilityManager;
     private dataBinder: DataBinder;
     private unitPathVerifier: UnitPathVerifier;
     private unitMover: UnitMover;
@@ -33,10 +35,11 @@ export default class Game {
         private readonly gameGateway: GameGateway,
     ) {
         this.timeManager = new TimeManager();
-        this.map = new Map(6, 5);
+        this.map = new Map(10, 20);
+        this.visibilityManager = new VisibilityManager(this.map);
         this.dataBinder = new DataBinder(this.currentPlayers, this.map);
         this.unitPathVerifier = new UnitPathVerifier(this.map);
-        this.unitMover = new UnitMover(this, gameGateway, this.timeManager, this.map.fields);
+        this.unitMover = new UnitMover(this, this.visibilityManager, this.dataBinder, gameGateway, this.timeManager, this.map.fields);
     }
 
     /**
@@ -93,7 +96,7 @@ export default class Game {
         let occupiedFields = getMapFieldsOfUnit(testUnit, this.map.fields);
         if (!occupiedFields.includes(undefined)) {
             this.dataBinder.insertUnit(player, testUnit);
-            this.informEligibleOpponentsAboutPlacedUnit(player, testUnit);
+            this.informEligibleOpponentsAboutUnit(player, testUnit);
         }
 
         this.dataBinder.addOpponentsBuildingsAndUnitsToPlayer(player, newObservedMapFields);
@@ -113,22 +116,7 @@ export default class Game {
         this.gameGateway.confirmBuildingPlaced(player, building);
         this.informEligibleOpponentsAboutPlacedBuilding(player, building);
 
-        // get new observed mapFields, to send them to client
-        let newObservedFields = this.getNewObservedMapFieldsFromPosition(
-            building.x,
-            building.y,
-            player
-        );
-
-        // add them to players' list
-        player.observedMapFields.push(...newObservedFields);
-
-        let {
-            newObservedBuildings,
-            newObservedUnits
-        } = this.dataBinder.addOpponentsBuildingsAndUnitsToPlayer(player, newObservedFields);
-
-        this.gameGateway.informAboutMapChanges(player, newObservedFields, newObservedBuildings, newObservedUnits);
+        this.updateMapInformation(player, building.x, building.y);
     };
 
     addUnit = (unit: Unit, player: Player) => {
@@ -144,21 +132,30 @@ export default class Game {
 
         // inform about building
         this.gameGateway.confirmUnitCreated(player, unit);
-        this.informEligibleOpponentsAboutPlacedUnit(player, unit);
+        this.informEligibleOpponentsAboutUnit(player, unit);
 
+        this.updateMapInformation(player, unit.x, unit.y);
+    };
+
+    /**
+     * Updates Map information when getting new point of view by player.
+     * @param player Player who changes point of view.
+     * @param x X coordinate of point of view.
+     * @param y Y coordinate of point of view.
+     */
+    updateMapInformation = (player: Player, x: number, y: number) => {
         // get new observed mapFields, to send them to client
-        let newObservedFields = this.getNewObservedMapFieldsFromPosition(
-            unit.x,
-            unit.y,
+        let newObservedFields = this.visibilityManager.getNewObservedMapFieldsFromPosition(
+            x,
+            y,
             player
         );
         // add them to players' list
         player.observedMapFields.push(...newObservedFields);
 
-        let discoveredBuildings = this.getNewBuildingsFromNewObservedFields(newObservedFields);
-        let discoveredUnits = this.getNewUnitsFromNewObservedFields(newObservedFields);
+        let { newObservedBuildings, newObservedUnits } = this.dataBinder.addOpponentsBuildingsAndUnitsToPlayer(player, newObservedFields);
 
-        this.gameGateway.informAboutMapChanges(player, newObservedFields, discoveredBuildings, discoveredUnits);
+        this.gameGateway.informAboutMapChanges(player, newObservedFields, newObservedBuildings, newObservedUnits);
     };
 
     //throws KnowinglyIllegalPathException
@@ -219,43 +216,6 @@ export default class Game {
         }
     };
 
-    getNewObservedMapFieldsFromPosition = (x: number, y: number, player: Player) => {
-        let observedFields = this.map.getObservableMapFieldsFromPosition(x, y);
-        let newObservedFields: MapField[] = [];
-        for (let i = 0; i < observedFields.length; i++) {
-            const observedField = observedFields[i];
-            if (!player.observedMapFields.find((alreadyObsevedField) => {
-                return alreadyObsevedField == observedField;
-            }))
-                newObservedFields.push(observedField);
-        }
-        return newObservedFields;
-    };
-
-    getNewBuildingsFromNewObservedFields = (newObservedFields: MapField[]) => {
-        let discoveredBuildings = new Set<Building>();
-        newObservedFields.forEach((newObservedField) => {
-            //every building on discovered mapFields is new (even if was noticed
-            //before - then client stores the old state of it.)
-            newObservedField.buildings.forEach((building) => {
-                discoveredBuildings.add(building);
-            });
-        });
-        return Array.from(discoveredBuildings);
-    };
-
-    getNewUnitsFromNewObservedFields = (newObservedFields: MapField[]) => {
-        let discoveredUnits = new Set<Unit>();
-        newObservedFields.forEach((newObservedField) => {
-            //every unit on discovered mapFields is new (even if was noticed
-            //before - then client stores the old state of it.)
-            newObservedField.units.forEach((unit) => {
-                discoveredUnits.add(unit);
-            });
-        });
-        return Array.from(discoveredUnits);
-    };
-
     /**
      * Informs eligible opponents, that given player placed building.
      * @param player Player who placed bulding.
@@ -274,11 +234,11 @@ export default class Game {
     };
 
     /**
-     * Informs eligible opponents, that given player placed unit.
+     * Informs eligible opponents, that given player moved or placed unit.
      * @param player Player who placed unit.
-     * @param unit Placed unit (already inserted into data structure).
+     * @param unit Modified unit (already inserted into data structure).
      */
-    informEligibleOpponentsAboutPlacedUnit = (player: Player, unit: Unit) => {
+    informEligibleOpponentsAboutUnit = (player: Player, unit: Unit) => {
         this.currentPlayers.forEach((updatedPlayer) => {
             if (updatedPlayer != player) {
                 let opponent = updatedPlayer.getOpponentById(player.userId);

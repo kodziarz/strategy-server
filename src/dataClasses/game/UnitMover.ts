@@ -8,6 +8,8 @@ import MapField from "../../../../strategy-common/dataClasses/MapField";
 import { GameGateway } from "src/game/game.gateway";
 import Game from "../Game";
 import ReportUnitMoveMessage from "../../../../strategy-common/socketioMessagesClasses/ReportUnitMoveMessage";
+import VisibilityManager from "./VisibilityManager";
+import DataBinder from "./DataBinder";
 
 /**
  * Moves {@link Unit}s along their {@link Path}s.
@@ -15,12 +17,23 @@ import ReportUnitMoveMessage from "../../../../strategy-common/socketioMessagesC
 export default class UnitMover {
 
     game: Game;
+    visibilityManager: VisibilityManager;
+    dataBinder: DataBinder;
     gameGateway: GameGateway;
     movements: Movement[] = [];
     fieldsMap: MapField[][];
 
-    constructor(game: Game, gameGateway: GameGateway, timeManager: TimeManager, fieldsMap: MapField[][]) {
+    constructor(
+        game: Game,
+        visibilityManager: VisibilityManager,
+        dataBinder: DataBinder,
+        gameGateway: GameGateway,
+        timeManager: TimeManager,
+        fieldsMap: MapField[][]
+    ) {
         this.game = game;
+        this.visibilityManager = visibilityManager;
+        this.dataBinder = dataBinder;
         this.gameGateway = gameGateway;
         timeManager.subscribe((elapsedTime, deltaTime, currentUnixTime) => { this.moveUnits(deltaTime, currentUnixTime); });
         this.fieldsMap = fieldsMap;
@@ -54,16 +67,24 @@ export default class UnitMover {
         if (remainingDeltaTime > 0) {
             Logger.debug("Jendostka dotarła do szczęśliwego końca");
             this.movements.splice(movementIndex, 1);
+
+            let player = this.game.getPlayerByUserId(movement.unit.ownerId);
             this.gameGateway.informAboutMapChanges(
-                this.game.getPlayerByUserId(movement.unit.ownerId),
+                player,
                 null,
                 null,
                 [movement.unit]
             );
+            this.game.informEligibleOpponentsAboutUnit(
+                player,
+                movement.unit
+            );
+            this.game.updateMapInformation(player, movement.unit.x, movement.unit.y);
         } else {
             // Logger.debug("Jednostka kontynuuje podróż.");
+            let player = this.game.getPlayerByUserId(movement.unit.ownerId);
             this.gameGateway.reportUnitMove(
-                this.game.getPlayerByUserId(movement.unit.ownerId),
+                player,
                 {
                     movementId: movement.id,
                     position: { x: movement.unit.x, y: movement.unit.y },
@@ -71,7 +92,26 @@ export default class UnitMover {
                     timestamp: movement.lastTimestamp
                 } as ReportUnitMoveMessage
             );
+            this.game.informEligibleOpponentsAboutUnit(
+                player,
+                movement.unit
+            );
+            this.game.updateMapInformation(player, movement.unit.x, movement.unit.y);
+            this.updateMapInfo(movement);
         }
+    };
+
+    updateMapInfo = (movement: Movement) => {
+        let unit = movement.unit;
+        let player = this.game.getPlayerByUserId(unit.ownerId);
+
+
+
+        let newMapFields = this.visibilityManager.getNewObservedMapFieldsFromPosition(unit.x, unit.y, player);
+        player.observedMapFields.push(...newMapFields);
+
+        let { newObservedBuildings, newObservedUnits } = this.dataBinder.addOpponentsBuildingsAndUnitsToPlayer(player, newMapFields);
+
     };
 
     /**
