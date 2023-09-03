@@ -4,7 +4,6 @@ import Unit from "../../../../strategy-common/dataClasses/Unit";
 import Point2d from "./../../../../strategy-common/geometryClasses/Point2d";
 import Map from "./Map";
 import { getCrossedMapFieldsForLine, getMapFieldOfPoint } from "./../../../../strategy-common/mapService";
-import { Logger } from "@nestjs/common";
 export default class UnitPathVerifier {
 
     private map: Map;
@@ -39,8 +38,6 @@ export default class UnitPathVerifier {
         unit: Unit
     ): { mapFields: MapField[]; crossings: Point2d[]; wasPathSliced: boolean; } => {
         let { mapPositions, crossings } = getCrossedMapFieldsForLine(startPoint, endPoint);
-        Logger.debug("mapPositions[0]: ");
-        Logger.debug(mapPositions);
         let mapFields = mapPositions.map((position) => { return this.map.fields[position.column][position.row]; });
 
         for (let i = 0; i < mapFields.length; i++) {

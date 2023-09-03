@@ -3,7 +3,7 @@
  */
 export default class TimeManager {
 
-    public static INTERVAL = 1; // [s]
+    public static readonly INTERVAL = 1; // [s]
     private interval: NodeJS.Timer;
     private functionsToInvoke: TimeDependentFunction[] = [];
     readonly gameStartTime: number;

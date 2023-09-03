@@ -122,10 +122,10 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     socket.emit("unitCreated", createdUnit);
   }
 
-  confirmUnitMove(player: Player, movementId: string) {
+  confirmUnitMove(player: Player, movementId: string, movementStart: number) {
     Logger.debug("Zatwierdzam ruch jednostki.");
     let socket = this.socketsOfPlayers.get(player.userId);
-    socket.emit("confirmUnitMove", { id: movementId } as UnitMoveResponse);
+    socket.emit("confirmUnitMove", { id: movementId, start: movementStart } as UnitMoveResponse);
   }
 
   rejectUnitMove(player: Player, movementId: string) {

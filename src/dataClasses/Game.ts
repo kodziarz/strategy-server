@@ -169,13 +169,17 @@ export default class Game {
         pathPoints: Point2d[]
     ) => {
         try {
-            let startPoint = new Point2d(unit.x, unit.y);
-            pathPoints.unshift(startPoint);
+            Logger.debug("pathPoints: ");
+            Logger.debug(pathPoints);
             let path = new Path();
 
-            for (let i = 0; i < pathPoints.length - 1; i++) {
-                let lineStart = pathPoints[i];
-                let lineEnd = pathPoints[i + 1];
+            let start = Date.now();
+            this.unitMover.finishMovementOfUnit(unit, start);
+
+            let lineEnd = new Point2d(unit.x, unit.y);
+            for (let i = 0; i < pathPoints.length; i++) {
+                let lineStart = lineEnd;
+                lineEnd = pathPoints[i];
 
                 let {
                     mapFields,
@@ -192,18 +196,22 @@ export default class Game {
 
                 if (wasPathSliced) {
                     // if path is sliced, it ends with an intersection, so the end does not need to be added.
-                    let movement = this.unitMover.setMovement(movementId, unit, path);
-                    this.gameGateway.confirmUnitMove(player, movement.id);
+                    let movement = this.unitMover.setMovement(movementId, unit, path, start);
+                    this.gameGateway.confirmUnitMove(player, movement.id, movement.start);
                     return;
                 } else {
                     // end of processed line is not an intersection, so it needs to be added
                     path.points.push(lineEnd);
                 }
             }
-            let movement = this.unitMover.setMovement(movementId, unit, path);
-            console.log("Ustawiam ruch według danych: ", movement);
+            let movement = this.unitMover.setMovement(movementId, unit, path, start);
+            Logger.debug("Ustawiam ruch według danych: ");
+            let copy = { ...movement };
+            copy.unit = copy.unit.getWithIdentifiers() as Unit; // only dev bro, don't care
+            copy.path = copy.path.getWithIdentifiers() as Path;
+            Logger.debug(copy);
 
-            this.gameGateway.confirmUnitMove(player, movement.id);
+            this.gameGateway.confirmUnitMove(player, movement.id, movement.start);
         } catch (ex: any) {
             if (ex instanceof KnowinglyIllegalPathException) {
                 this.gameGateway.rejectUnitMove(player, movementId);
